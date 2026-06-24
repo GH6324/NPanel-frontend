@@ -64,6 +64,8 @@
   "ipAddresses": "IP 地址",
   "memory": "内存",
   "mode": "模式",
+  "mc1_cidr_segments": "MC1 CIDR 段",
+  "mc1_mode": "MC1 模式",
   "mundo_accept_proxy_protocol": "接受 Proxy Protocol",
   "mundo_certificate_fingerprint": "证书指纹",
   "mundo_fake_message": "伪装消息",

@@ -1737,7 +1737,8 @@ export function useProtocolFields() {
           label: t("host", "Host"),
           placeholder: "e.g. front.example.com",
           group: "transport",
-          condition: (p) => ["websocket", "httpupgrade"].includes(p.transport),
+          condition: (p) =>
+            ["websocket", "httpupgrade", "mc1"].includes(p.transport),
         },
         {
           name: "path",
@@ -1745,7 +1746,8 @@ export function useProtocolFields() {
           label: t("path", "Path"),
           placeholder: "e.g. /mundo",
           group: "transport",
-          condition: (p) => ["websocket", "httpupgrade"].includes(p.transport),
+          condition: (p) =>
+            ["websocket", "httpupgrade", "mc1"].includes(p.transport),
         },
         {
           name: "service_name",
@@ -1753,6 +1755,24 @@ export function useProtocolFields() {
           label: t("service_name", "Service Name"),
           group: "transport",
           condition: (p) => p.transport === "grpc",
+        },
+        {
+          name: "mc1_mode",
+          type: "select",
+          label: t("mc1_mode", "MC1 Mode"),
+          options: ["auto"],
+          defaultValue: "auto",
+          group: "transport",
+          condition: (p) => p.transport === "mc1",
+        },
+        {
+          name: "mc1_cidr_segments",
+          type: "input",
+          label: t("mc1_cidr_segments", "MC1 CIDR Segments"),
+          placeholder: "e.g. 127.0.0.0/24, 10.0.0.0/8",
+          group: "transport",
+          condition: (p) => p.transport === "mc1",
+          gridSpan: 2,
         },
         {
           name: "mundo_username",

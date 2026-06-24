@@ -226,6 +226,8 @@ export function getProtocolDefaultConfig(proto: ProtocolType) {
         security: "tls",
         path: null,
         service_name: null,
+        mc1_mode: "auto",
+        mc1_cidr_segments: [],
         mundo_username: "MundoUser",
         mundo_certificate_fingerprint: null,
         mundo_fake_title: null,

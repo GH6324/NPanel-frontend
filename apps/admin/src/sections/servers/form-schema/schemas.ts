@@ -252,6 +252,8 @@ const mx = z.object({
   security: z.enum(SECURITY.mx).nullish(),
   path: nullableString,
   service_name: nullableString,
+  mc1_mode: nullableString,
+  mc1_cidr_segments: z.union([z.array(z.string()), z.string()]).nullish(),
   mundo_username: nullableString,
   mundo_certificate_fingerprint: nullableString,
   mundo_fake_title: nullableString,

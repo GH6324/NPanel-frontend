@@ -94,6 +94,11 @@ function DynamicField({
                   {...fieldProps}
                   onValueChange={(v) => fieldProps.onChange(v)}
                   placeholder={field.placeholder}
+                  value={
+                    Array.isArray(fieldProps.value)
+                      ? fieldProps.value.join(", ")
+                      : (fieldProps.value ?? "")
+                  }
                   suffix={
                     field.generate ? (
                       field.generate.functions &&
@@ -364,6 +369,22 @@ function normalizeProtocolForSubmit(protocol: any, serverAddress?: string) {
     if (!Number(nextProtocol.port)) nextProtocol.port = 443;
     if (!nextProtocol.transport) nextProtocol.transport = "tcp";
     if (!nextProtocol.security) nextProtocol.security = "tls";
+    if (nextProtocol.transport === "mc1") {
+      if (!nextProtocol.path) nextProtocol.path = "/mc1";
+      if (!nextProtocol.host && serverAddress) {
+        nextProtocol.host = serverAddress;
+      }
+      if (!nextProtocol.mc1_mode) nextProtocol.mc1_mode = "auto";
+      if (typeof nextProtocol.mc1_cidr_segments === "string") {
+        nextProtocol.mc1_cidr_segments = nextProtocol.mc1_cidr_segments
+          .split(",")
+          .map((item: string) => item.trim())
+          .filter(Boolean);
+      }
+    } else {
+      nextProtocol.mc1_mode = null;
+      nextProtocol.mc1_cidr_segments = [];
+    }
     if (
       ["mundordp", "mundosql"].includes(nextProtocol.transport) &&
       !nextProtocol.mundo_username

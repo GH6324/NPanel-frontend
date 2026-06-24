@@ -64,6 +64,8 @@
   "ipAddresses": "IP Addresses",
   "memory": "Memory",
   "mode": "Mode",
+  "mc1_cidr_segments": "MC1 CIDR Segments",
+  "mc1_mode": "MC1 Mode",
   "mundo_accept_proxy_protocol": "Accept Proxy Protocol",
   "mundo_certificate_fingerprint": "Certificate Fingerprint",
   "mundo_fake_message": "Fake Message",

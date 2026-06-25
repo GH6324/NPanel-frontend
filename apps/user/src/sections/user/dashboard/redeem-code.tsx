@@ -25,8 +25,13 @@ export default function RedeemCode({ onSuccess }: RedeemCodeProps) {
   const redeemMutation = useMutation({
     mutationFn: (code: string) => redeemCode({ code }),
     onSuccess: (response) => {
+      const responseData = response.data as {
+        data?: { message?: string };
+        message?: string;
+      };
       const message =
-        (response.data as { message?: string })?.message ||
+        responseData.data?.message ||
+        responseData.message ||
         t("redeemSuccess", "兑换成功");
       toast.success(message);
       setCode("");

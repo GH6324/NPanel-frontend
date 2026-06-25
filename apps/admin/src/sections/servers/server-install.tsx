@@ -90,7 +90,7 @@ export default function ServerInstall({ server }: Props) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button variant="secondary">{t("connect", "Connect")}</Button>
+        <Button variant="secondary">{t("connect", "Install")}</Button>
       </DialogTrigger>
 
       <DialogContent className="w-[720px] max-w-full md:max-w-3xl">

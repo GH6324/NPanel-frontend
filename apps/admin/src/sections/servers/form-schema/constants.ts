@@ -158,5 +158,5 @@ export const multiplexLevels = ["none", "low", "middle", "high"] as const;
 
 export function getLabel(value: string): string {
   const label = (LABELS as Record<string, string>)[value];
-  return label ?? value.toUpperCase();
+  return label ?? value.charAt(0).toUpperCase() + value.slice(1);
 }

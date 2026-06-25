@@ -8,25 +8,38 @@ interface TrafficStatsCardsProps {
   stats: GetUserTrafficStatsResponse;
 }
 
+function getTrafficValue(
+  stats: GetUserTrafficStatsResponse,
+  key: "total_traffic" | "total_upload" | "total_download"
+) {
+  const camelKey = {
+    total_traffic: "totalTraffic",
+    total_upload: "totalUpload",
+    total_download: "totalDownload",
+  }[key];
+
+  return stats[key] ?? stats[camelKey] ?? 0;
+}
+
 export default function TrafficStatsCards({ stats }: TrafficStatsCardsProps) {
   const { t } = useTranslation("traffic");
 
   const cards = [
     {
       title: t("totalTraffic", "Total Traffic"),
-      value: stats.total_traffic,
+      value: getTrafficValue(stats, "total_traffic"),
       icon: "uil:chart-line",
       color: "text-blue-500",
     },
     {
       title: t("uploadTraffic", "Upload Traffic"),
-      value: stats.total_upload,
+      value: getTrafficValue(stats, "total_upload"),
       icon: "uil:upload",
       color: "text-green-500",
     },
     {
       title: t("downloadTraffic", "Download Traffic"),
-      value: stats.total_download,
+      value: getTrafficValue(stats, "total_download"),
       icon: "uil:download",
       color: "text-purple-500",
     },

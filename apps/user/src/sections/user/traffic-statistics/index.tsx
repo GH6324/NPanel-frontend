@@ -27,6 +27,21 @@ function toNumber(value?: number | string | null) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getSubscribeId(
+  subscribe?: API.UserSubscribe & { id_str?: string | number | null }
+) {
+  const id = subscribe?.id_str ?? subscribe?.id;
+  return id === undefined || id === null ? null : String(id);
+}
+
+function getTrafficTotal(
+  stats: API.GetUserTrafficStatsReply | null | undefined,
+  key: "total_upload" | "total_download"
+) {
+  const camelKey = key === "total_upload" ? "totalUpload" : "totalDownload";
+  return toNumber(stats?.[key] ?? stats?.[camelKey]);
+}
+
 export default function TrafficStatistics() {
   const { t } = useTranslation("traffic");
   const [days, setDays] = useState<7 | 30>(7);
@@ -43,9 +58,8 @@ export default function TrafficStatistics() {
     },
   });
 
-  // 使用 id_str 字段，避免 JavaScript 精度丢失
   const activeSubscribeId =
-    selectedSubscribeId || userSubscribe[0]?.id_str || null;
+    selectedSubscribeId || getSubscribeId(userSubscribe[0]);
 
   // 查询流量统计数据
   const { data: trafficStats, isLoading } = useQuery({
@@ -53,6 +67,7 @@ export default function TrafficStatistics() {
     queryFn: async () => {
       if (!activeSubscribeId) return null;
       const { data } = await getUserTrafficStats({
+        userSubscribeId: activeSubscribeId,
         user_subscribe_id: activeSubscribeId,
         days,
       });
@@ -83,7 +98,7 @@ export default function TrafficStatistics() {
               </SelectTrigger>
               <SelectContent>
                 {userSubscribe.map((sub) => (
-                  <SelectItem key={sub.id} value={sub.id_str}>
+                  <SelectItem key={sub.id} value={getSubscribeId(sub) ?? ""}>
                     {sub.subscribe.name}
                   </SelectItem>
                 ))}
@@ -143,11 +158,11 @@ export default function TrafficStatistics() {
                 <Icon className="size-8 animate-spin" icon="uil:spinner" />
               </div>
             ) : trafficStats &&
-              (toNumber(trafficStats.total_upload) > 0 ||
-                toNumber(trafficStats.total_download) > 0) ? (
+              (getTrafficTotal(trafficStats, "total_upload") > 0 ||
+                getTrafficTotal(trafficStats, "total_download") > 0) ? (
               <TrafficRatioChart
-                download={trafficStats.total_download}
-                upload={trafficStats.total_upload}
+                download={getTrafficTotal(trafficStats, "total_download")}
+                upload={getTrafficTotal(trafficStats, "total_upload")}
               />
             ) : (
               <div className="flex h-[300px] items-center justify-center text-muted-foreground">

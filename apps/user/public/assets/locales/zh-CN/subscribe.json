@@ -6,7 +6,7 @@
     "duration": "套餐时长",
     "fee": "手续费",
     "gift": "赠金抵扣",
-    "originalPrice": "原价（按月）",
+    "originalPrice": "原价",
     "price": "价格",
     "productDiscount": "商品折扣",
     "total": "总价"
@@ -61,5 +61,6 @@
     "unsubscribe": "取消订阅",
     "unsubscribeDescription": "请注意：如果您现在取消订阅，订阅的剩余价值将退还到您的账户余额中，可用于您下次的订阅购买或续订。"
   },
+  "Week": "周",
   "Year": "年"
 }

@@ -963,16 +963,16 @@ export default function SubscribeForm<T extends Record<string, any>>({
                                   }
                                 }}
                                 options={[
+                                  { label: t("form.Minute"), value: "Minute" },
+                                  { label: t("form.Hour"), value: "Hour" },
+                                  { label: t("form.Day"), value: "Day" },
+                                  { label: t("form.Week"), value: "Week" },
+                                  { label: t("form.Month"), value: "Month" },
+                                  { label: t("form.Year"), value: "Year" },
                                   {
                                     label: t("form.NoLimit"),
                                     value: "NoLimit",
                                   },
-                                  { label: t("form.Year"), value: "Year" },
-                                  { label: t("form.Month"), value: "Month" },
-                                  { label: t("form.Week"), value: "Week" },
-                                  { label: t("form.Day"), value: "Day" },
-                                  { label: t("form.Hour"), value: "Hour" },
-                                  { label: t("form.Minute"), value: "Minute" },
                                 ]}
                               />
                             </FormControl>
@@ -1057,16 +1057,16 @@ export default function SubscribeForm<T extends Record<string, any>>({
                                   type: "select",
                                   placeholder: t("form.unitTime"),
                                   options: [
+                                    { label: t("form.Minute"), value: "Minute" },
+                                    { label: t("form.Hour"), value: "Hour" },
+                                    { label: t("form.Day"), value: "Day" },
+                                    { label: t("form.Week"), value: "Week" },
+                                    { label: t("form.Month"), value: "Month" },
+                                    { label: t("form.Year"), value: "Year" },
                                     {
                                       label: t("form.NoLimit"),
                                       value: "NoLimit",
                                     },
-                                    { label: t("form.Year"), value: "Year" },
-                                    { label: t("form.Month"), value: "Month" },
-                                    { label: t("form.Week"), value: "Week" },
-                                    { label: t("form.Day"), value: "Day" },
-                                    { label: t("form.Hour"), value: "Hour" },
-                                    { label: t("form.Minute"), value: "Minute" },
                                   ],
                                 },
                                 {

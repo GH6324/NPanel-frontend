@@ -47,6 +47,7 @@ import {
   getUserList,
   updateUserBasicInfo,
 } from "@workspace/ui/services/admin/user";
+import { routingServicePreviewRouteConfig } from "@workspace/ui/services/admin/routingService";
 import { copyText } from "@workspace/ui/utils/clipboard";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -112,6 +113,7 @@ export default function User() {
           />,
           <SubscriptionSheet key="subscription" userId={row.id} />,
           <PreviewNodesDialog key="preview-nodes" userId={row.id} />,
+          <RoutingPolicyDialog key="routing-policy" userId={row.id} />,
           <ConfirmButton
             cancelText={t("cancel", "Cancel")}
             confirmText={t("confirm", "Confirm")}
@@ -576,5 +578,99 @@ function PreviewNodesDialog({ userId }: { userId: string | number }) {
         ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RoutingPolicyDialog({ userId }: { userId: string | number }) {
+  const { t } = useTranslation("user");
+  const [open, setOpen] = useState(false);
+  const { data: previewData, isLoading } = useQuery({
+    enabled: open,
+    queryKey: ["previewUserRoutingPolicy", userId],
+    queryFn: async () => {
+      const { data } = await routingServicePreviewRouteConfig({
+        domain: "openai.com",
+        userId: String(userId),
+        supportedFeatures: ["route_outbound", "route_dns_resolver", "doh"],
+      });
+      return data.data;
+    },
+  });
+
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <Button variant="outline">{t("routingPolicy", "Routing")}</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {t("routingPolicy", "Routing Policy")} · ID: {userId}
+          </DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            {t("loading", "Loading...")}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <RoutingMetric
+                label={t("routingProfile", "Profile")}
+                value={previewData?.profileName || previewData?.profileCode}
+              />
+              <RoutingMetric
+                label={t("routingScope", "Scope")}
+                value={
+                  previewData?.scopeType
+                    ? `${previewData.scopeType}:${previewData.scopeId || "-"}`
+                    : "-"
+                }
+              />
+              <RoutingMetric
+                label={t("routingRule", "Rule")}
+                value={previewData?.ruleName || "-"}
+              />
+              <RoutingMetric
+                label={t("dnsResolver", "DNS Resolver")}
+                value={previewData?.dnsResolverTag || "-"}
+              />
+              <RoutingMetric
+                label={t("outbound", "Outbound")}
+                value={previewData?.outboundTag || "-"}
+              />
+              <RoutingMetric
+                label={t("routingHash", "Routing Hash")}
+                value={previewData?.routingHash || "-"}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">
+                {previewData?.matched
+                  ? t("routingMatched", "Matched")
+                  : t("routingDefaultAction", "Default action")}
+              </Badge>
+              <Button asChild size="sm" variant="default">
+                <Link
+                  search={{ user_id: String(userId) }}
+                  to="/dashboard/routing"
+                >
+                  {t("configureRouting", "Configure Routing")}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RoutingMetric({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="min-w-0 rounded-md border px-3 py-2">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <div className="truncate font-medium">{value || "-"}</div>
+    </div>
   );
 }

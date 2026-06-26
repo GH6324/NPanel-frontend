@@ -2674,12 +2674,17 @@ declare namespace API {
     userId?: string;
     nodeId?: string;
     supportedFeatures?: string[];
+    subscribeId?: string;
+    userSubscribeId?: string;
+    subscribeToken?: string;
   };
 
   type PreviewRouteResult = {
     routingHash?: string;
     profileCode?: string;
     profileName?: string;
+    scopeType?: string;
+    scopeId?: string;
     matched?: boolean;
     ruleId?: string;
     ruleName?: string;

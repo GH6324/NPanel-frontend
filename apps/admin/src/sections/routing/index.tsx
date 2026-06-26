@@ -47,6 +47,7 @@ import {
   routingServiceUpdateRouteRule,
   routingServiceUpdateUnlockService,
 } from "@workspace/ui/services/admin/routingService";
+import { Link, useSearch } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import {
   Activity,
@@ -324,7 +325,13 @@ function RoutingForm({
   );
 }
 
-function RoutingTable({ config }: { config: ResourceConfig }) {
+function RoutingTable({
+  config,
+  initialSearch,
+}: {
+  config: ResourceConfig;
+  initialSearch?: string;
+}) {
   const { t } = useTranslation("routing");
   const [loading, setLoading] = useState(false);
   const ref = useRef<ProTableActions>(null);
@@ -434,6 +441,8 @@ function RoutingTable({ config }: { config: ResourceConfig }) {
           />
         ),
       }}
+      initialFilters={initialSearch ? { search: initialSearch } : undefined}
+      key={`${config.title}:${initialSearch || ""}`}
       params={[{ key: "search" }]}
       request={async (pagination, filter) =>
         config.list(pagination, filter.search)
@@ -444,7 +453,12 @@ function RoutingTable({ config }: { config: ResourceConfig }) {
 
 function PreviewPanel() {
   const { t } = useTranslation("routing");
+  const sp = useSearch({ strict: false }) as Record<string, string | undefined>;
   const [domain, setDomain] = useState("openai.com");
+  const [userId, setUserId] = useState(sp.user_id || "");
+  const [subscribeId, setSubscribeId] = useState("");
+  const [userSubscribeId, setUserSubscribeId] = useState("");
+  const [subscribeToken, setSubscribeToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<API.PreviewRouteResult | null>(null);
 
@@ -453,6 +467,10 @@ function PreviewPanel() {
     try {
       const { data } = await routingServicePreviewRouteConfig({
         domain,
+        userId,
+        subscribeId,
+        userSubscribeId,
+        subscribeToken,
         supportedFeatures: ["route_outbound", "route_dns_resolver", "doh"],
       });
       setResult(data.data || null);
@@ -463,7 +481,7 @@ function PreviewPanel() {
 
   return (
     <div className="rounded-md border bg-background p-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,360px)_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,460px)_1fr]">
         <div className="space-y-3">
           <Label>{t("domain", "Domain")}</Label>
           <div className="flex gap-2">
@@ -475,6 +493,28 @@ function PreviewPanel() {
               <Eye className="size-4" />
               {t("preview", "Preview")}
             </Button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Input
+              onChange={(event) => setUserId(event.target.value)}
+              placeholder={t("userId", "User ID")}
+              value={userId}
+            />
+            <Input
+              onChange={(event) => setSubscribeId(event.target.value)}
+              placeholder={t("subscribeId", "Subscribe ID")}
+              value={subscribeId}
+            />
+            <Input
+              onChange={(event) => setUserSubscribeId(event.target.value)}
+              placeholder={t("userSubscribeId", "User Subscribe ID")}
+              value={userSubscribeId}
+            />
+            <Input
+              onChange={(event) => setSubscribeToken(event.target.value)}
+              placeholder={t("subscribeToken", "Subscribe Token")}
+              value={subscribeToken}
+            />
           </div>
         </div>
         <div className="grid gap-2 text-sm md:grid-cols-2 xl:grid-cols-4">
@@ -494,6 +534,14 @@ function PreviewPanel() {
           <Metric
             label={t("fallback", "Fallback")}
             value={result?.fallbackPolicy || "-"}
+          />
+          <Metric
+            label={t("scope", "Scope")}
+            value={
+              result?.scopeType
+                ? `${result.scopeType}:${result.scopeId || "-"}`
+                : "-"
+            }
           />
           <Metric
             label={t("mode", "Mode")}
@@ -699,6 +747,19 @@ function statusBadgeVariant(
 
 export default function RoutingPage() {
   const { t } = useTranslation("routing");
+  const sp = useSearch({ strict: false }) as Record<string, string | undefined>;
+  const queryUserID = sp.user_id || "";
+  const defaultScopeType = queryUserID ? "user" : sp.scope_type || "global";
+  const defaultScopeID = queryUserID || sp.scope_id || "default";
+  const defaultProfileCode = queryUserID
+    ? `p_user_${queryUserID}`
+    : "p1_default_smart";
+  const defaultProfileName = queryUserID
+    ? t("defaults.userProfileName", {
+        defaultValue: "User {{userId}} Routing",
+        userId: queryUserID,
+      })
+    : t("defaults.profileName", "P1 Default Smart");
 
   const resources: Array<{
     value: string;
@@ -709,14 +770,14 @@ export default function RoutingPage() {
       config: {
         title: t("profiles", "Profiles"),
         defaultValue: {
-          code: "p1_default_smart",
-          name: t("defaults.profileName", "P1 Default Smart"),
+          code: defaultProfileCode,
+          name: defaultProfileName,
           description: t(
             "defaults.profileDescription",
             "Admin managed routing profile"
           ),
-          scopeType: "global",
-          scopeId: "default",
+          scopeType: defaultScopeType,
+          scopeId: defaultScopeID,
           priority: 100,
           mode: "observe",
           enabled: true,
@@ -915,6 +976,19 @@ export default function RoutingPage() {
         </div>
         <Badge variant="secondary">routing_profile.v1</Badge>
       </div>
+      {queryUserID ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">
+            {t("userScopeHint", "Current user scope")}
+          </span>
+          <Badge variant="outline">user:{queryUserID}</Badge>
+          <Button asChild size="sm" variant="outline">
+            <Link search={{ user_id: queryUserID }} to="/dashboard/user">
+              {t("backToUser", "Back to User")}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
       <PreviewPanel />
       <RoutingOverviewPanel />
       <Tabs defaultValue="profiles">
@@ -931,7 +1005,10 @@ export default function RoutingPage() {
             key={resource.value}
             value={resource.value}
           >
-            <RoutingTable config={resource.config} />
+            <RoutingTable
+              config={resource.config}
+              initialSearch={resource.value === "profiles" ? queryUserID : ""}
+            />
           </TabsContent>
         ))}
       </Tabs>

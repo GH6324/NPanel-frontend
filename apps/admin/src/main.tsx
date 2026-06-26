@@ -1,13 +1,14 @@
 import {
   createBrowserHistory,
   createRouter,
+  type ErrorComponentProps,
   RouterProvider,
 } from "@tanstack/react-router";
 import {
   TanStackQueryContext,
   TanStackQueryProvider,
 } from "@workspace/ui/integrations/tanstack-query";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -59,6 +60,69 @@ window.logout = Logout;
 // Create a new router instance
 const TanStackQueryProviderContext = TanStackQueryContext();
 const browserHistory = createBrowserHistory();
+
+function isChunkLoadError(error: unknown) {
+  const name = error instanceof Error ? error.name : "";
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  const details = `${name} ${message}`;
+
+  return [
+    "Failed to fetch dynamically imported module",
+    "Importing a module script failed",
+    "error loading dynamically imported module",
+    "Loading chunk",
+    "ChunkLoadError",
+  ].some((pattern) => details.includes(pattern));
+}
+
+function RouteErrorFallback({ error }: ErrorComponentProps) {
+  const isChunkError = isChunkLoadError(error);
+  const reloadKey = "npanel-admin-chunk-reload";
+  const lastReloadAt = Number(sessionStorage.getItem(reloadKey) || 0);
+  const canReload = isChunkError && Date.now() - lastReloadAt > 30_000;
+
+  useEffect(() => {
+    if (canReload) {
+      sessionStorage.setItem(reloadKey, String(Date.now()));
+      window.location.reload();
+    }
+  }, [canReload]);
+
+  if (isChunkError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="font-semibold text-2xl">Application updated</h1>
+        <p className="max-w-md text-muted-foreground">
+          The admin panel resources were refreshed. Please reload this page.
+        </p>
+        <button
+          className="rounded-md bg-primary px-4 py-2 text-primary-foreground"
+          onClick={() => window.location.reload()}
+          type="button"
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+      <h1 className="font-semibold text-2xl">Something went wrong</h1>
+      <pre className="max-w-full overflow-auto rounded-md border px-4 py-3 text-left text-destructive text-sm">
+        {message}
+      </pre>
+    </div>
+  );
+}
+
 const router = createRouter({
   routeTree,
   history: browserHistory,
@@ -69,6 +133,7 @@ const router = createRouter({
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
+  defaultErrorComponent: RouteErrorFallback,
 });
 
 // Register the router instance for type safety

@@ -29,6 +29,14 @@
   status = 200
   force = false
 
+# 静态构建产物缺失时不要回退到 SPA 首页。
+# 否则旧入口文件引用已删除的 chunk 时，浏览器会把 index.html 当 JS 模块加载。
+[[redirects]]
+  from = "/static/*"
+  to = "/index.html"
+  status = 404
+  force = false
+
 # SPA 路由支持
 [[redirects]]
   from = "/*"

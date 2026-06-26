@@ -48,13 +48,16 @@ import {
   getNodeGroupList,
 } from "@workspace/ui/services/admin/group";
 import { getSubscribeCategoryList } from "@workspace/ui/services/admin/subscribe";
+import { unitConversion } from "@workspace/ui/utils/unit-conversions";
 import {
-  evaluateWithPrecision,
-  unitConversion,
-} from "@workspace/ui/utils/unit-conversions";
-import { CreditCard, Server, Settings } from "lucide-react";
+  CreditCard,
+  PlusIcon,
+  Server,
+  Settings,
+  Trash2Icon,
+} from "lucide-react";
 import { shake } from "radash";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -110,10 +113,14 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
     ? processedValues.price_options.map((item: Record<string, any>) => ({
         ...item,
         name: item.name ?? "",
-        duration_unit: item.duration_unit || processedValues.unit_time || "Month",
+        duration_unit:
+          item.duration_unit || processedValues.unit_time || "Month",
         duration_value:
-          item.duration_unit === "NoLimit" ? 0 : toNumber(item.duration_value) || 1,
-        price: toNumber(item.price) ?? toNumber(processedValues.unit_price) ?? 0,
+          item.duration_unit === "NoLimit"
+            ? 0
+            : toNumber(item.duration_value) || 1,
+        price:
+          toNumber(item.price) ?? toNumber(processedValues.unit_price) ?? 0,
         original_price: toNumber(item.original_price) ?? 0,
         inventory: toNumber(item.inventory) ?? -1,
         show: item.show ?? true,
@@ -202,15 +209,15 @@ function normalizePriceOptionsForSubmit(
     const durationUnit = item.duration_unit || fallback.unit_time || "Month";
     return {
       ...item,
-      name: item.name || "",
+      name: "",
       duration_unit: durationUnit,
       duration_value:
         durationUnit === "NoLimit" ? 0 : toNumber(item.duration_value) || 1,
       price: toNumber(item.price) ?? 0,
       original_price: toNumber(item.original_price) ?? 0,
-      inventory: toNumber(item.inventory) ?? -1,
-      show: item.show ?? true,
-      sell: item.sell ?? true,
+      inventory: -1,
+      show: true,
+      sell: true,
       is_default: item.is_default ?? index === 0,
       sort: toNumber(item.sort) ?? source.length - index,
     };
@@ -275,6 +282,263 @@ function getFirstValidationMessage(error: unknown): string | undefined {
   return;
 }
 
+type PriceOptionEditorItem = {
+  id?: string | number;
+  name: string;
+  duration_unit: string;
+  duration_value: number;
+  price: number;
+  original_price: number;
+  inventory: number;
+  show: boolean;
+  sell: boolean;
+  is_default: boolean;
+  sort: number;
+  [key: string]: unknown;
+};
+
+function getDiscountLabel(item: PriceOptionEditorItem) {
+  if (!(item.original_price > 0)) return "-";
+  const ratio = item.price / item.original_price;
+  if (!Number.isFinite(ratio)) return "-";
+  return `${Math.max(0, Math.round((1 - ratio) * 100))}%`;
+}
+
+function PriceOptionsEditor({
+  currencySymbol,
+  onChange,
+  value = [],
+}: {
+  currencySymbol?: string;
+  onChange: (value: PriceOptionEditorItem[]) => void;
+  value?: Partial<PriceOptionEditorItem>[];
+}) {
+  const { t } = useTranslation("product");
+  const durationUnitOptions = [
+    { label: t("form.Minute"), value: "Minute" },
+    { label: t("form.Hour"), value: "Hour" },
+    { label: t("form.Day"), value: "Day" },
+    { label: t("form.Week"), value: "Week" },
+    { label: t("form.Month"), value: "Month" },
+    { label: t("form.Year"), value: "Year" },
+    { label: t("form.NoLimit"), value: "NoLimit" },
+  ];
+
+  const createDefaultOption = (index: number): PriceOptionEditorItem => ({
+    name: "",
+    duration_unit: "Month",
+    duration_value: 1,
+    price: 0,
+    original_price: 0,
+    inventory: -1,
+    show: true,
+    sell: true,
+    is_default: index === 0,
+    sort: (index + 1) * 100,
+  });
+
+  const normalizeItems = (items: Partial<PriceOptionEditorItem>[]) => {
+    const normalized: PriceOptionEditorItem[] = items.map((item, index) => {
+      const durationUnit = item.duration_unit || "Month";
+      return {
+        ...item,
+        name: "",
+        duration_unit: durationUnit,
+        duration_value:
+          durationUnit === "NoLimit" ? 0 : toNumber(item.duration_value) || 1,
+        price: toNumber(item.price) ?? 0,
+        original_price: toNumber(item.original_price) ?? 0,
+        inventory: -1,
+        show: true,
+        sell: true,
+        is_default: item.is_default ?? index === 0,
+        sort: toNumber(item.sort) ?? (index + 1) * 100,
+      };
+    });
+
+    if (!normalized.some((item) => item.is_default) && normalized[0]) {
+      normalized[0].is_default = true;
+    }
+    return normalized;
+  };
+
+  const safeValue =
+    value.length > 0 ? normalizeItems(value) : [createDefaultOption(0)];
+
+  const emitChange = (items: Partial<PriceOptionEditorItem>[]) => {
+    onChange(normalizeItems(items));
+  };
+
+  const updateItem = (index: number, patch: Partial<PriceOptionEditorItem>) => {
+    const nextItems = safeValue.map((item, itemIndex) => {
+      if (itemIndex !== index) {
+        return patch.is_default ? { ...item, is_default: false } : item;
+      }
+      return { ...item, ...patch };
+    });
+    emitChange(nextItems);
+  };
+
+  const addOption = () => {
+    emitChange([...safeValue, createDefaultOption(safeValue.length)]);
+  };
+
+  const removeOption = (index: number) => {
+    const nextItems = safeValue.filter((_, itemIndex) => itemIndex !== index);
+    emitChange(nextItems.length > 0 ? nextItems : [createDefaultOption(0)]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="hidden grid-cols-[minmax(220px,1.25fr)_minmax(160px,1fr)_minmax(160px,1fr)_80px_88px_44px] gap-3 px-1 text-muted-foreground text-xs lg:grid">
+        <span>{t("form.duration")}</span>
+        <span>{t("form.originalPrice")}</span>
+        <span>{t("form.price")}</span>
+        <span>{t("form.discountRate")}</span>
+        <span>{t("form.recommended")}</span>
+        <span />
+      </div>
+      <div className="space-y-2">
+        {safeValue.map((item, index) => (
+          <div
+            className="grid gap-3 rounded-lg border bg-card p-3 lg:grid-cols-[minmax(220px,1.25fr)_minmax(160px,1fr)_minmax(160px,1fr)_80px_88px_44px] lg:items-end"
+            key={`${item.id ?? "option"}-${index}`}
+          >
+            <div className="space-y-2">
+              <Label className="lg:hidden">{t("form.duration")}</Label>
+              <div className="grid grid-cols-[1fr_1.2fr] gap-2">
+                <EnhancedInput
+                  disabled={item.duration_unit === "NoLimit"}
+                  min={1}
+                  onValueChange={(durationValue) =>
+                    updateItem(index, {
+                      duration_value:
+                        item.duration_unit === "NoLimit"
+                          ? 0
+                          : toNumber(durationValue) || 1,
+                    })
+                  }
+                  step={1}
+                  type="number"
+                  value={
+                    item.duration_unit === "NoLimit"
+                      ? 0
+                      : toNumber(item.duration_value) || 1
+                  }
+                />
+                <Combobox<string, false>
+                  onChange={(durationUnit) =>
+                    updateItem(index, {
+                      duration_unit: durationUnit,
+                      duration_value:
+                        durationUnit === "NoLimit"
+                          ? 0
+                          : toNumber(item.duration_value) || 1,
+                    })
+                  }
+                  options={durationUnitOptions}
+                  placeholder={t("form.selectUnitTime")}
+                  value={item.duration_unit || "Month"}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="lg:hidden">{t("form.originalPrice")}</Label>
+              <EnhancedInput
+                formatInput={(inputValue) =>
+                  unitConversion("centsToDollars", inputValue)
+                }
+                formatOutput={(inputValue) =>
+                  unitConversion("dollarsToCents", inputValue)
+                }
+                min={0}
+                onValueChange={(originalPrice) =>
+                  updateItem(index, {
+                    original_price: toNumber(originalPrice) ?? 0,
+                  })
+                }
+                prefix={currencySymbol}
+                step={0.01}
+                type="number"
+                value={item.original_price}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="lg:hidden">{t("form.price")}</Label>
+              <EnhancedInput
+                formatInput={(inputValue) =>
+                  unitConversion("centsToDollars", inputValue)
+                }
+                formatOutput={(inputValue) =>
+                  unitConversion("dollarsToCents", inputValue)
+                }
+                min={0}
+                onValueChange={(price) =>
+                  updateItem(index, { price: toNumber(price) ?? 0 })
+                }
+                prefix={currencySymbol}
+                step={0.01}
+                type="number"
+                value={item.price}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="lg:hidden">{t("form.discountRate")}</Label>
+              <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-muted-foreground text-sm">
+                {getDiscountLabel(item)}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="lg:hidden">{t("form.recommended")}</Label>
+              <div className="flex h-9 items-center">
+                <Switch
+                  checked={!!item.is_default}
+                  onCheckedChange={(checked) => {
+                    if (!checked) return;
+                    if (
+                      safeValue.some(
+                        (option, optionIndex) =>
+                          optionIndex !== index && option.is_default
+                      )
+                    ) {
+                      toast.info(t("form.recommendedOptionChanged"));
+                    }
+                    updateItem(index, { is_default: true });
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex h-9 items-center justify-end">
+              {safeValue.length > 1 && (
+                <Button
+                  aria-label={t("form.deletePriceOption")}
+                  className="text-destructive"
+                  onClick={() => removeOption(index)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Button
+        className="w-full"
+        onClick={addOption}
+        type="button"
+        variant="outline"
+      >
+        <PlusIcon className="size-4" />
+        {t("form.addPriceOption")}
+      </Button>
+    </div>
+  );
+}
+
 export default function SubscribeForm<T extends Record<string, any>>({
   onSubmit,
   initialValues,
@@ -287,7 +551,6 @@ export default function SubscribeForm<T extends Record<string, any>>({
 
   const { i18n, t } = useTranslation("product");
   const [open, setOpen] = useState(false);
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isZh = i18n.resolvedLanguage?.startsWith("zh");
   const categoryText = useMemo(
     () => ({
@@ -365,136 +628,24 @@ export default function SubscribeForm<T extends Record<string, any>>({
     defaultValues: normalizeSubscribeValues(initialValues),
   });
 
-  const debouncedCalculateDiscount = useCallback(
-    (
-      values: any[],
-      fieldName: string,
-      lastChangedField?: string,
-      changedIndex?: number
-    ) => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-
-      updateTimeoutRef.current = setTimeout(() => {
-        const { unit_price } = form.getValues();
-        if (!(unit_price && values?.length)) return;
-
-        let hasChanges = false;
-        const calculatedValues = values.map((item: any, index: number) => {
-          const result = { ...item };
-
-          if (changedIndex !== undefined && index !== changedIndex) {
-            return result;
-          }
-
-          const quantity = Number(item.quantity) || 0;
-          const discount = Number(item.discount) || 0;
-          const price = Number(item.price) || 0;
-
-          switch (lastChangedField) {
-            case "quantity":
-            case "discount":
-              if (quantity > 0 && discount > 0) {
-                const newPrice = evaluateWithPrecision(
-                  `${unit_price} * ${quantity} * ${discount} / 100`
-                );
-                if (Math.abs(newPrice - price) > 0.01) {
-                  result.price = newPrice;
-                  hasChanges = true;
-                }
-              }
-              break;
-
-            case "price":
-              if (quantity > 0 && price > 0) {
-                const newDiscount = evaluateWithPrecision(
-                  `${price} / ${quantity} / ${unit_price} * 100`
-                );
-                if (Math.abs(newDiscount - discount) > 0.01) {
-                  result.discount = Math.min(100, Math.max(0, newDiscount));
-                  hasChanges = true;
-                }
-              } else if (discount > 0 && price > 0) {
-                const newQuantity = evaluateWithPrecision(
-                  `${price} / ${unit_price} / ${discount} * 100`
-                );
-                if (
-                  Math.abs(newQuantity - quantity) > 0.01 &&
-                  newQuantity > 0
-                ) {
-                  result.quantity = Math.max(1, Math.round(newQuantity));
-                  hasChanges = true;
-                }
-              }
-              break;
-
-            default:
-              if (quantity > 0 && discount > 0 && price === 0) {
-                result.price = evaluateWithPrecision(
-                  `${unit_price} * ${quantity} * ${discount} / 100`
-                );
-                hasChanges = true;
-              } else if (quantity > 0 && price > 0 && discount === 0) {
-                const newDiscount = evaluateWithPrecision(
-                  `${price} / ${quantity} / ${unit_price} * 100`
-                );
-                result.discount = Math.min(100, Math.max(0, newDiscount));
-                hasChanges = true;
-              } else if (discount > 0 && price > 0 && quantity === 0) {
-                const newQuantity = evaluateWithPrecision(
-                  `${price} / ${unit_price} / ${discount} * 100`
-                );
-                if (newQuantity > 0) {
-                  result.quantity = Math.max(1, Math.round(newQuantity));
-                  hasChanges = true;
-                }
-              }
-              break;
-          }
-
-          return result;
-        });
-
-        if (hasChanges) {
-          form.setValue(fieldName as any, calculatedValues, {
-            shouldDirty: true,
-          });
-        }
-      }, 300);
-    },
-    [form]
-  );
-
   useEffect(() => {
     const processedValues = normalizeSubscribeValues(initialValues);
     form?.reset(processedValues);
-    const discount = form.getValues("discount") || [];
-    if (discount.length > 0) {
-      debouncedCalculateDiscount(discount, "discount");
-    }
   }, [form, initialValues, open]);
-
-  useEffect(
-    () => () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-    },
-    []
-  );
 
   async function handleSubmit(data: { [x: string]: any }) {
     const priceOptions = normalizePriceOptionsForSubmit(
       data.price_options,
       data
     );
-    const defaultOption = priceOptions.find((item) => item.is_default) ||
-      priceOptions[0];
+    const defaultOption =
+      priceOptions.find((item) => item.is_default) || priceOptions[0];
     const submitData = {
       ...data,
       category_id: data.category_id ? Number(data.category_id) : 0,
+      discount: [],
       price_options: priceOptions,
+      show_original_price: false,
       unit_price: defaultOption?.price ?? data.unit_price,
       unit_time: defaultOption?.duration_unit ?? data.unit_time,
     };
@@ -567,7 +718,6 @@ export default function SubscribeForm<T extends Record<string, any>>({
       : nodeGroup.name;
   };
 
-  const unit_time = form.watch("unit_time");
   const node_group_id = form.watch("node_group_id");
   const node_group_ids = form.watch("node_group_ids");
 
@@ -1044,127 +1194,10 @@ export default function SubscribeForm<T extends Record<string, any>>({
                             {t("form.priceOptions", "Price Options")}
                           </FormLabel>
                           <FormControl>
-                            <ArrayInput
-                              className="gap-3"
-                              fields={[
-                                {
-                                  name: "name",
-                                  type: "text",
-                                  placeholder: t("form.optionName", "Name"),
-                                },
-                                {
-                                  name: "duration_unit",
-                                  type: "select",
-                                  placeholder: t("form.unitTime"),
-                                  options: [
-                                    { label: t("form.Minute"), value: "Minute" },
-                                    { label: t("form.Hour"), value: "Hour" },
-                                    { label: t("form.Day"), value: "Day" },
-                                    { label: t("form.Week"), value: "Week" },
-                                    { label: t("form.Month"), value: "Month" },
-                                    { label: t("form.Year"), value: "Year" },
-                                    {
-                                      label: t("form.NoLimit"),
-                                      value: "NoLimit",
-                                    },
-                                  ],
-                                },
-                                {
-                                  name: "duration_value",
-                                  type: "number",
-                                  min: 1,
-                                  step: 1,
-                                  placeholder: t(
-                                    "form.durationValue",
-                                    "Duration"
-                                  ),
-                                  visible: (item) =>
-                                    item.duration_unit !== "NoLimit",
-                                },
-                                {
-                                  name: "price",
-                                  type: "number",
-                                  min: 0,
-                                  step: 0.01,
-                                  prefix: currency.currency_symbol,
-                                  placeholder: t("form.price", "Price"),
-                                  formatInput: (value) =>
-                                    unitConversion("centsToDollars", value),
-                                  formatOutput: (value) =>
-                                    unitConversion(
-                                      "dollarsToCents",
-                                      value
-                                    ).toString(),
-                                },
-                                {
-                                  name: "original_price",
-                                  type: "number",
-                                  min: 0,
-                                  step: 0.01,
-                                  prefix: currency.currency_symbol,
-                                  placeholder: t(
-                                    "form.originalPrice",
-                                    "Original"
-                                  ),
-                                  formatInput: (value) =>
-                                    unitConversion("centsToDollars", value),
-                                  formatOutput: (value) =>
-                                    unitConversion(
-                                      "dollarsToCents",
-                                      value
-                                    ).toString(),
-                                },
-                                {
-                                  name: "inventory",
-                                  type: "number",
-                                  step: 1,
-                                  placeholder: t("form.inventory"),
-                                },
-                                {
-                                  name: "is_default",
-                                  type: "boolean",
-                                  placeholder: t("form.default", "Default"),
-                                },
-                                {
-                                  name: "show",
-                                  type: "boolean",
-                                  placeholder: t("form.show", "Show"),
-                                },
-                                {
-                                  name: "sell",
-                                  type: "boolean",
-                                  placeholder: t("form.sell", "Sell"),
-                                },
-                                {
-                                  name: "sort",
-                                  type: "number",
-                                  step: 1,
-                                  placeholder: t("form.sort", "Sort"),
-                                },
-                              ]}
+                            <PriceOptionsEditor
+                              currencySymbol={currency.currency_symbol}
                               onChange={(newValues) => {
-                                const nextValues = newValues.map(
-                                  (item, index) => ({
-                                    ...item,
-                                    duration_unit:
-                                      item.duration_unit || "Month",
-                                    duration_value:
-                                      item.duration_unit === "NoLimit"
-                                        ? 0
-                                        : toNumber(item.duration_value) || 1,
-                                    price: toNumber(item.price) ?? 0,
-                                    original_price:
-                                      toNumber(item.original_price) ?? 0,
-                                    inventory:
-                                      toNumber(item.inventory) ?? -1,
-                                    show: item.show ?? true,
-                                    sell: item.sell ?? true,
-                                    is_default:
-                                      item.is_default ?? index === 0,
-                                    sort: toNumber(item.sort) ?? 0,
-                                  })
-                                );
-                                form.setValue(field.name, nextValues, {
+                                form.setValue(field.name, newValues, {
                                   shouldDirty: true,
                                 });
                               }}
@@ -1176,114 +1209,6 @@ export default function SubscribeForm<T extends Record<string, any>>({
                               "form.priceOptionsDescription",
                               "Create one product and add multiple sellable duration and price options."
                             )}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="discount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("form.discount")}</FormLabel>
-                          <FormControl>
-                            <ArrayInput<
-                              API.SubscribeDiscount & { price?: number }
-                            >
-                              fields={[
-                                {
-                                  name: "quantity",
-                                  type: "number",
-                                  step: 1,
-                                  min: 1,
-                                  suffix: unit_time && t(`form.${unit_time}`),
-                                },
-                                {
-                                  name: "discount",
-                                  type: "number",
-                                  min: 1,
-                                  max: 100,
-                                  step: 1,
-                                  placeholder: t("form.discountPercent"),
-                                  suffix: "%",
-                                },
-                                {
-                                  name: "price",
-                                  placeholder: t("form.discount_price"),
-                                  type: "number",
-                                  min: 0,
-                                  step: 0.01,
-                                  prefix: currency.currency_symbol,
-                                  formatInput: (value) =>
-                                    unitConversion("centsToDollars", value),
-                                  formatOutput: (value) =>
-                                    unitConversion(
-                                      "dollarsToCents",
-                                      value
-                                    ).toString(),
-                                },
-                              ]}
-                              onChange={(
-                                newValues: (API.SubscribeDiscount & {
-                                  price?: number;
-                                })[]
-                              ) => {
-                                const oldValues = field.value || [];
-                                let lastChangedField: string | undefined;
-                                let changedIndex: number | undefined;
-
-                                for (
-                                  let i = 0;
-                                  i <
-                                  Math.max(newValues.length, oldValues.length);
-                                  i++
-                                ) {
-                                  const newItem = newValues[i] || {};
-                                  const oldItem = oldValues[i] || {};
-
-                                  if (
-                                    (newItem as any).quantity !==
-                                    (oldItem as any).quantity
-                                  ) {
-                                    lastChangedField = "quantity";
-                                    changedIndex = i;
-                                    break;
-                                  }
-                                  if (
-                                    (newItem as any).discount !==
-                                    (oldItem as any).discount
-                                  ) {
-                                    lastChangedField = "discount";
-                                    changedIndex = i;
-                                    break;
-                                  }
-                                  if (
-                                    (newItem as any).price !==
-                                    (oldItem as any).price
-                                  ) {
-                                    lastChangedField = "price";
-                                    changedIndex = i;
-                                    break;
-                                  }
-                                }
-                                form.setValue(field.name, newValues, {
-                                  shouldDirty: true,
-                                });
-                                if (newValues?.length > 0) {
-                                  debouncedCalculateDiscount(
-                                    newValues,
-                                    field.name,
-                                    lastChangedField,
-                                    changedIndex
-                                  );
-                                }
-                              }}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t("form.discountDescription")}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1331,40 +1256,6 @@ export default function SubscribeForm<T extends Record<string, any>>({
                               <Switch
                                 checked={field.value}
                                 onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="show_original_price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <FormLabel>
-                                {t(
-                                  "form.showOriginalPrice",
-                                  "Show Original Price"
-                                )}
-                              </FormLabel>
-                              <FormDescription>
-                                {t(
-                                  "form.showOriginalPriceDescription",
-                                  "Display original price in the storefront"
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={!!field.value}
-                                onCheckedChange={(value) =>
-                                  form.setValue(field.name, value)
-                                }
                               />
                             </FormControl>
                           </div>

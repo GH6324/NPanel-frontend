@@ -37,6 +37,7 @@ import {
   ProList,
   type ProListActions,
 } from "@workspace/ui/composed/pro-list/pro-list";
+import { TicketImagePreview } from "@workspace/ui/composed/ticket-image-preview";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   createUserTicket,
@@ -308,7 +309,7 @@ export default function Ticket() {
                     <p className="text-muted-foreground text-sm">
                       {formatDate(item.created_at)}
                     </p>
-                    <p
+                    <div
                       className={cn(
                         "w-fit rounded-lg bg-accent p-2 font-medium",
                         {
@@ -319,15 +320,12 @@ export default function Ticket() {
                     >
                       {item.type === 1 && item.content}
                       {item.type === 2 && (
-                        <img
+                        <TicketImagePreview
                           alt="ticket attachment"
-                          className="!size-auto object-cover"
-                          height={300}
                           src={item.content!}
-                          width={300}
                         />
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -16,6 +16,7 @@ import {
   ProTable,
   type ProTableActions,
 } from "@workspace/ui/composed/pro-table/pro-table";
+import { TicketImagePreview } from "@workspace/ui/composed/ticket-image-preview";
 import { cn } from "@workspace/ui/lib/utils";
 import {
   createTicketFollow,
@@ -221,7 +222,7 @@ export default function Page() {
                     <p className="text-muted-foreground text-sm">
                       {formatDate(toNumber(item.created_at))}
                     </p>
-                    <p
+                    <div
                       className={cn(
                         "w-fit rounded-lg bg-accent p-2 font-medium",
                         {
@@ -232,16 +233,12 @@ export default function Page() {
                     >
                       {toNumber(item.type) === 1 && item.content}
                       {toNumber(item.type) === 2 && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <TicketImagePreview
                           alt="attachment"
-                          className="!size-auto object-cover"
-                          height={300}
                           src={item.content!}
-                          width={300}
                         />
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               ))}

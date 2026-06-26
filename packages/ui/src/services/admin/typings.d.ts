@@ -545,6 +545,7 @@ declare namespace API {
   type SubscribeClient = any;
   type SubscribeConfig = any;
   type SubscribeDiscount = any;
+  type SubscribePriceOption = any;
   type SubscribeCategoryInfo = any;
   type SubscribeGetSubscribeCategoryListParams = any;
   type SubscribeGetSubscribeDetailsParams = any;

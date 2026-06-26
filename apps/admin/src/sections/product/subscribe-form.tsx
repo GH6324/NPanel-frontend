@@ -83,6 +83,7 @@ const defaultValues = {
   node_group_id: "",
   node_group_ids: [],
   unit_time: "Month",
+  price_options: [],
   deduction_ratio: 0,
   purchase_with_discount: false,
   reset_cycle: 0,
@@ -104,6 +105,40 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
     ...defaultValues,
     ...(shake(values, (value) => value === null) as Record<string, any>),
   };
+
+  const priceOptions = Array.isArray(processedValues.price_options)
+    ? processedValues.price_options.map((item: Record<string, any>) => ({
+        ...item,
+        name: item.name ?? "",
+        duration_unit: item.duration_unit || processedValues.unit_time || "Month",
+        duration_value:
+          item.duration_unit === "NoLimit" ? 0 : toNumber(item.duration_value) || 1,
+        price: toNumber(item.price) ?? toNumber(processedValues.unit_price) ?? 0,
+        original_price: toNumber(item.original_price) ?? 0,
+        inventory: toNumber(item.inventory) ?? -1,
+        show: item.show ?? true,
+        sell: item.sell ?? true,
+        is_default: item.is_default ?? false,
+        sort: toNumber(item.sort) ?? 0,
+      }))
+    : [];
+  if (priceOptions.length === 0) {
+    priceOptions.push({
+      name: "",
+      duration_unit: processedValues.unit_time || "Month",
+      duration_value: processedValues.unit_time === "NoLimit" ? 0 : 1,
+      price: toNumber(processedValues.unit_price) ?? 0,
+      original_price: 0,
+      inventory: -1,
+      show: true,
+      sell: true,
+      is_default: true,
+      sort: 100,
+    });
+  }
+  if (!priceOptions.some((item) => item.is_default)) {
+    priceOptions[0]!.is_default = true;
+  }
 
   return {
     ...processedValues,
@@ -146,6 +181,7 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
           price: toNumber(item.price) ?? 0,
         }))
       : [],
+    price_options: priceOptions,
     traffic_limit: Array.isArray(processedValues.traffic_limit)
       ? processedValues.traffic_limit.map((item: Record<string, any>) => ({
           ...item,
@@ -155,6 +191,34 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
         }))
       : [],
   };
+}
+
+function normalizePriceOptionsForSubmit(
+  items: Record<string, any>[] | undefined,
+  fallback: Record<string, any>
+) {
+  const source = Array.isArray(items) && items.length > 0 ? items : [];
+  const normalized = source.map((item, index) => {
+    const durationUnit = item.duration_unit || fallback.unit_time || "Month";
+    return {
+      ...item,
+      name: item.name || "",
+      duration_unit: durationUnit,
+      duration_value:
+        durationUnit === "NoLimit" ? 0 : toNumber(item.duration_value) || 1,
+      price: toNumber(item.price) ?? 0,
+      original_price: toNumber(item.original_price) ?? 0,
+      inventory: toNumber(item.inventory) ?? -1,
+      show: item.show ?? true,
+      sell: item.sell ?? true,
+      is_default: item.is_default ?? index === 0,
+      sort: toNumber(item.sort) ?? source.length - index,
+    };
+  });
+  if (!normalized.some((item) => item.is_default) && normalized[0]) {
+    normalized[0].is_default = true;
+  }
+  return normalized;
 }
 
 function buildCategoryOptions(categories: API.SubscribeCategoryInfo[] = []) {
@@ -242,6 +306,23 @@ export default function SubscribeForm<T extends Record<string, any>>({
     description: z.string().optional(),
     unit_price: z.number(),
     unit_time: z.string(),
+    price_options: z
+      .array(
+        z.object({
+          id: z.union([z.string(), z.number()]).optional(),
+          name: z.string().optional(),
+          duration_unit: z.string(),
+          duration_value: z.number(),
+          price: z.number(),
+          original_price: z.number().optional(),
+          inventory: z.number().optional(),
+          show: z.boolean().optional(),
+          sell: z.boolean().optional(),
+          is_default: z.boolean().optional(),
+          sort: z.number().optional(),
+        })
+      )
+      .optional(),
     replacement: z.number().optional(),
     discount: z
       .array(
@@ -404,9 +485,18 @@ export default function SubscribeForm<T extends Record<string, any>>({
   );
 
   async function handleSubmit(data: { [x: string]: any }) {
+    const priceOptions = normalizePriceOptionsForSubmit(
+      data.price_options,
+      data
+    );
+    const defaultOption = priceOptions.find((item) => item.is_default) ||
+      priceOptions[0];
     const submitData = {
       ...data,
       category_id: data.category_id ? Number(data.category_id) : 0,
+      price_options: priceOptions,
+      unit_price: defaultOption?.price ?? data.unit_price,
+      unit_time: defaultOption?.duration_unit ?? data.unit_time,
     };
 
     const bool = await onSubmit(submitData as unknown as T);
@@ -879,6 +969,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
                                   },
                                   { label: t("form.Year"), value: "Year" },
                                   { label: t("form.Month"), value: "Month" },
+                                  { label: t("form.Week"), value: "Week" },
                                   { label: t("form.Day"), value: "Day" },
                                   { label: t("form.Hour"), value: "Hour" },
                                   { label: t("form.Minute"), value: "Minute" },
@@ -944,6 +1035,152 @@ export default function SubscribeForm<T extends Record<string, any>>({
                         )}
                       />
                     </div>
+                    <FormField
+                      control={form.control}
+                      name="price_options"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {t("form.priceOptions", "Price Options")}
+                          </FormLabel>
+                          <FormControl>
+                            <ArrayInput
+                              className="gap-3"
+                              fields={[
+                                {
+                                  name: "name",
+                                  type: "text",
+                                  placeholder: t("form.optionName", "Name"),
+                                },
+                                {
+                                  name: "duration_unit",
+                                  type: "select",
+                                  placeholder: t("form.unitTime"),
+                                  options: [
+                                    {
+                                      label: t("form.NoLimit"),
+                                      value: "NoLimit",
+                                    },
+                                    { label: t("form.Year"), value: "Year" },
+                                    { label: t("form.Month"), value: "Month" },
+                                    { label: t("form.Week"), value: "Week" },
+                                    { label: t("form.Day"), value: "Day" },
+                                    { label: t("form.Hour"), value: "Hour" },
+                                    { label: t("form.Minute"), value: "Minute" },
+                                  ],
+                                },
+                                {
+                                  name: "duration_value",
+                                  type: "number",
+                                  min: 1,
+                                  step: 1,
+                                  placeholder: t(
+                                    "form.durationValue",
+                                    "Duration"
+                                  ),
+                                  visible: (item) =>
+                                    item.duration_unit !== "NoLimit",
+                                },
+                                {
+                                  name: "price",
+                                  type: "number",
+                                  min: 0,
+                                  step: 0.01,
+                                  prefix: currency.currency_symbol,
+                                  placeholder: t("form.price", "Price"),
+                                  formatInput: (value) =>
+                                    unitConversion("centsToDollars", value),
+                                  formatOutput: (value) =>
+                                    unitConversion(
+                                      "dollarsToCents",
+                                      value
+                                    ).toString(),
+                                },
+                                {
+                                  name: "original_price",
+                                  type: "number",
+                                  min: 0,
+                                  step: 0.01,
+                                  prefix: currency.currency_symbol,
+                                  placeholder: t(
+                                    "form.originalPrice",
+                                    "Original"
+                                  ),
+                                  formatInput: (value) =>
+                                    unitConversion("centsToDollars", value),
+                                  formatOutput: (value) =>
+                                    unitConversion(
+                                      "dollarsToCents",
+                                      value
+                                    ).toString(),
+                                },
+                                {
+                                  name: "inventory",
+                                  type: "number",
+                                  step: 1,
+                                  placeholder: t("form.inventory"),
+                                },
+                                {
+                                  name: "is_default",
+                                  type: "boolean",
+                                  placeholder: t("form.default", "Default"),
+                                },
+                                {
+                                  name: "show",
+                                  type: "boolean",
+                                  placeholder: t("form.show", "Show"),
+                                },
+                                {
+                                  name: "sell",
+                                  type: "boolean",
+                                  placeholder: t("form.sell", "Sell"),
+                                },
+                                {
+                                  name: "sort",
+                                  type: "number",
+                                  step: 1,
+                                  placeholder: t("form.sort", "Sort"),
+                                },
+                              ]}
+                              onChange={(newValues) => {
+                                const nextValues = newValues.map(
+                                  (item, index) => ({
+                                    ...item,
+                                    duration_unit:
+                                      item.duration_unit || "Month",
+                                    duration_value:
+                                      item.duration_unit === "NoLimit"
+                                        ? 0
+                                        : toNumber(item.duration_value) || 1,
+                                    price: toNumber(item.price) ?? 0,
+                                    original_price:
+                                      toNumber(item.original_price) ?? 0,
+                                    inventory:
+                                      toNumber(item.inventory) ?? -1,
+                                    show: item.show ?? true,
+                                    sell: item.sell ?? true,
+                                    is_default:
+                                      item.is_default ?? index === 0,
+                                    sort: toNumber(item.sort) ?? 0,
+                                  })
+                                );
+                                form.setValue(field.name, nextValues, {
+                                  shouldDirty: true,
+                                });
+                              }}
+                              value={field.value}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {t(
+                              "form.priceOptionsDescription",
+                              "Create one product and add multiple sellable duration and price options."
+                            )}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="discount"

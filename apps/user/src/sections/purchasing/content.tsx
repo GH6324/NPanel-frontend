@@ -17,6 +17,14 @@ import CouponInput from "@/sections/subscribe/coupon-input";
 import { SubscribeDetail } from "@/sections/subscribe/detail";
 import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
+import {
+  getDefaultPriceOption,
+  getOptionDurationUnit,
+  getOptionDurationValue,
+  getOptionId,
+  getOptionPrice,
+  getSubscribePriceOptions,
+} from "@/sections/subscribe/price-options";
 import { useGlobalStore } from "@/stores/global";
 
 export default function Content({
@@ -31,6 +39,7 @@ export default function Content({
     Minute: t("Minute", "Minute"),
     Month: t("Month", "Month"),
     NoLimit: t("NoLimit", "No Limit"),
+    Week: t("Week", "Week"),
     Year: t("Year", "Year"),
   };
   const { common } = useGlobalStore();
@@ -49,19 +58,28 @@ export default function Content({
     valid: false,
     message: "",
   });
+  const priceOptions = getSubscribePriceOptions(subscription);
+  const selectedOption =
+    priceOptions.find((item) => String(getOptionId(item)) === String((params as any).price_option_id)) ||
+    getDefaultPriceOption(subscription);
 
   const { data: order } = useQuery({
-    enabled: !!subscription?.id && !!params.payment,
+    enabled:
+      !!subscription?.id &&
+      !!params.payment &&
+      (!priceOptions.length || !!(params as any).price_option_id),
     queryKey: [
       "preCreateOrder",
       params.coupon,
       params.quantity,
+      (params as any).price_option_id,
       params.payment,
     ],
     queryFn: async () => {
       const { data } = await prePurchaseOrder({
         ...params,
         subscribe_id: subscription?.id ?? "",
+        price_option_id: (params as any).price_option_id,
       } as API.PrePurchaseOrderRequest);
       return data.data || null;
     },
@@ -69,9 +87,11 @@ export default function Content({
 
   useEffect(() => {
     if (subscription) {
+      const defaultOption = getDefaultPriceOption(subscription);
       setParams((prev) => ({
         ...prev,
-        quantity: 1,
+        quantity: defaultOption ? getOptionDurationValue(defaultOption) : 1,
+        price_option_id: getOptionId(defaultOption),
         subscribe_id: subscription?.id,
       }));
     }
@@ -273,15 +293,26 @@ export default function Content({
             <SubscribeDetail
               subscribe={{
                 ...subscription,
-                quantity: params.quantity,
+                quantity: selectedOption
+                  ? getOptionDurationValue(selectedOption)
+                  : params.quantity,
               }}
             />
             <Separator />
             <SubscribeBilling
               order={{
                 ...order,
-                quantity: String(params.quantity ?? 1),
-                unit_price: subscription?.unit_price,
+                quantity: String(
+                  selectedOption
+                    ? getOptionDurationValue(selectedOption)
+                    : params.quantity ?? 1
+                ),
+                unit_price: selectedOption
+                  ? getOptionPrice(selectedOption)
+                  : subscription?.unit_price,
+                unit_time: selectedOption
+                  ? getOptionDurationUnit(selectedOption)
+                  : subscription?.unit_time,
                 show_original_price: subscription?.show_original_price,
               }}
             />
@@ -296,7 +327,19 @@ export default function Content({
               <DurationSelector
                 discounts={subscription?.discount}
                 onChange={(value: number) => handleChange("quantity", value)}
+                onChangeOption={(value) => {
+                  const option = priceOptions.find(
+                    (item) => String(getOptionId(item)) === value
+                  );
+                  setParams((prev) => ({
+                    ...prev,
+                    price_option_id: value,
+                    quantity: getOptionDurationValue(option),
+                  }));
+                }}
+                priceOptions={priceOptions}
                 quantity={Number(params.quantity ?? 1)}
+                selectedPriceOptionId={(params as any).price_option_id}
                 unitTime={
                   unitTimeMap[subscription.unit_time!] || subscription.unit_time
                 }
@@ -316,7 +359,12 @@ export default function Content({
 
         <Button
           className="w-full"
-          disabled={!isEmailValid.valid || loading || !params.payment}
+          disabled={
+            !isEmailValid.valid ||
+            loading ||
+            !params.payment ||
+            (priceOptions.length > 0 && !(params as any).price_option_id)
+          }
           onClick={handleSubmit}
           size="lg"
         >

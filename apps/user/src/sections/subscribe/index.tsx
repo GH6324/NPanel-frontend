@@ -18,6 +18,12 @@ import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
 import { buildSubscribeSections } from "./catalog";
 import { SubscribeDetail } from "./detail";
+import {
+  getDefaultPriceOption,
+  getOptionDurationUnit,
+  getOptionDurationValue,
+  getOptionPrice,
+} from "./price-options";
 
 function toNumber(value?: number | string | null) {
   const parsed = typeof value === "string" ? Number(value) : Number(value ?? 0);
@@ -34,6 +40,7 @@ export default function Subscribe() {
     Minute: t("Minute", "Minute"),
     Month: t("Month", "Month"),
     NoLimit: t("NoLimit", "No Limit"),
+    Week: t("Week", "Week"),
     Year: t("Year", "Year"),
   };
   const locale = i18n.language;
@@ -138,25 +145,41 @@ export default function Subscribe() {
                         item.discount && item.discount.length > 0;
                       const shouldShowOriginal =
                         item.show_original_price !== false;
+                      const defaultOption = getDefaultPriceOption(item);
 
                       const displayPrice =
-                        shouldShowOriginal || !hasDiscount
-                          ? item.unit_price
-                          : Math.round(
-                              toNumber(item.unit_price) *
-                                toNumber(item.discount?.[0]?.quantity ?? 1) *
-                                (toNumber(item.discount?.[0]?.discount ?? 100) /
-                                  100)
-                            );
+                        defaultOption
+                          ? getOptionPrice(defaultOption)
+                          : shouldShowOriginal || !hasDiscount
+                            ? item.unit_price
+                            : Math.round(
+                                toNumber(item.unit_price) *
+                                  toNumber(item.discount?.[0]?.quantity ?? 1) *
+                                  (toNumber(
+                                    item.discount?.[0]?.discount ?? 100
+                                  ) /
+                                    100)
+                              );
 
                       const displayQuantity =
-                        shouldShowOriginal || !hasDiscount
-                          ? 1
-                          : toNumber(item.discount?.[0]?.quantity ?? 1);
+                        defaultOption
+                          ? getOptionDurationValue(defaultOption)
+                          : shouldShowOriginal || !hasDiscount
+                            ? 1
+                            : toNumber(item.discount?.[0]?.quantity ?? 1);
 
                       const unitTime =
-                        unitTimeMap[item.unit_time!] ||
-                        t(item.unit_time || "Month", item.unit_time || "Month");
+                        defaultOption
+                          ? unitTimeMap[getOptionDurationUnit(defaultOption)] ||
+                            t(
+                              getOptionDurationUnit(defaultOption),
+                              getOptionDurationUnit(defaultOption)
+                            )
+                          : unitTimeMap[item.unit_time!] ||
+                            t(
+                              item.unit_time || "Month",
+                              item.unit_time || "Month"
+                            );
 
                       return (
                         <h2 className="pb-8 font-semibold text-2xl sm:text-3xl">

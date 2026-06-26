@@ -18,6 +18,12 @@ interface SubscribeBillingProps {
       subscribe_discount: number | string;
       show_original_price?: boolean;
       quantity: number | string;
+      duration_unit?: string;
+      durationUnit?: string;
+      duration_value?: number | string;
+      durationValue?: number | string;
+      option_price?: number | string;
+      optionPrice?: number | string;
     }
   >;
 }
@@ -25,8 +31,16 @@ interface SubscribeBillingProps {
 export function SubscribeBilling({ order }: Readonly<SubscribeBillingProps>) {
   const { t } = useTranslation("subscribe");
   const quantity = toNumber(order?.quantity) || 1;
+  const durationValue =
+    toNumber((order as any)?.duration_value ?? (order as any)?.durationValue) ||
+    quantity;
+  const durationUnit =
+    (order as any)?.duration_unit || (order as any)?.durationUnit || order?.unit_time;
   const unitPrice = toNumber(order?.unit_price);
-  const price = toNumber(order?.price) || unitPrice;
+  const optionPrice = toNumber(
+    (order as any)?.option_price ?? (order as any)?.optionPrice
+  );
+  const price = toNumber(order?.price) || optionPrice || unitPrice;
   const discount = toNumber(order?.discount);
   const couponDiscount = toNumber(order?.coupon_discount);
   const feeAmount = toNumber(order?.fee_amount);
@@ -45,10 +59,9 @@ export function SubscribeBilling({ order }: Readonly<SubscribeBillingProps>) {
               {t("billing.duration", "Duration")}
             </span>
             <span>
-              {quantity}{" "}
-              {String(
-                t(order?.unit_time || "Month", order?.unit_time || "Month")
-              )}
+              {durationUnit === "NoLimit"
+                ? t("NoLimit", "No Limit")
+                : `${durationValue} ${String(t(durationUnit || "Month", durationUnit || "Month"))}`}
             </span>
           </li>
         )}{" "}

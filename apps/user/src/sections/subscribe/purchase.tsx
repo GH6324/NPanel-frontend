@@ -21,6 +21,14 @@ import PaymentMethods from "@/sections/subscribe/payment-methods";
 import { useGlobalStore } from "@/stores/global";
 import { SubscribeBilling } from "./billing";
 import { SubscribeDetail } from "./detail";
+import {
+  getDefaultPriceOption,
+  getOptionDurationUnit,
+  getOptionDurationValue,
+  getOptionId,
+  getOptionPrice,
+  getSubscribePriceOptions,
+} from "./price-options";
 
 interface PurchaseProps {
   subscribe?: API.Subscribe;
@@ -42,13 +50,21 @@ export default function Purchase({
   });
   const [loading, startTransition] = useTransition();
   const lastSuccessOrderRef = useRef<any>(null);
+  const priceOptions = getSubscribePriceOptions(subscribe);
+  const selectedOption =
+    priceOptions.find((item) => String(getOptionId(item)) === String((params as any).price_option_id)) ||
+    getDefaultPriceOption(subscribe);
 
   const { data: order } = useQuery({
-    enabled: !!subscribe?.id && !!params.payment,
+    enabled:
+      !!subscribe?.id &&
+      !!params.payment &&
+      (!priceOptions.length || !!(params as any).price_option_id),
     queryKey: [
       "preCreateOrder",
       subscribe?.id,
       params.quantity,
+      (params as any).price_option_id,
       params.payment,
       params.coupon,
     ],
@@ -56,7 +72,9 @@ export default function Purchase({
       try {
         const { data } = await preCreateOrder({
           ...params,
+          type: 1,
           subscribe_id: subscribe?.id ?? "",
+          price_option_id: (params as any).price_option_id,
         } as API.PurchaseOrderRequest);
         const result = data.data || null;
         if (result) {
@@ -74,14 +92,18 @@ export default function Purchase({
 
   useEffect(() => {
     if (subscribe) {
+      const defaultOption = getDefaultPriceOption(subscribe);
       const defaultQuantity =
-        subscribe.show_original_price === false && subscribe.discount?.[0]
-          ? Number(subscribe.discount[0].quantity)
-          : 1;
+        defaultOption
+          ? getOptionDurationValue(defaultOption)
+          : subscribe.show_original_price === false && subscribe.discount?.[0]
+            ? Number(subscribe.discount[0].quantity)
+            : 1;
       setParams((prev) => ({
         ...prev,
         quantity: defaultQuantity,
         subscribe_id: subscribe?.id,
+        price_option_id: getOptionId(defaultOption),
       }));
     }
   }, [subscribe]);
@@ -128,15 +150,26 @@ export default function Purchase({
               <SubscribeDetail
                 subscribe={{
                   ...subscribe,
-                  quantity: params.quantity,
+                  quantity: selectedOption
+                    ? getOptionDurationValue(selectedOption)
+                    : params.quantity,
                 }}
               />
               <Separator />
               <SubscribeBilling
                 order={{
                   ...order,
-                  quantity: String(params.quantity ?? 1),
-                  unit_price: subscribe?.unit_price,
+                  quantity: String(
+                    selectedOption
+                      ? getOptionDurationValue(selectedOption)
+                      : params.quantity ?? 1
+                  ),
+                  unit_price: selectedOption
+                    ? getOptionPrice(selectedOption)
+                    : subscribe?.unit_price,
+                  unit_time: selectedOption
+                    ? getOptionDurationUnit(selectedOption)
+                    : subscribe?.unit_time,
                   show_original_price: subscribe?.show_original_price,
                 }}
               />
@@ -149,7 +182,19 @@ export default function Purchase({
                 onChange={(value) => {
                   handleChange("quantity", value);
                 }}
+                onChangeOption={(value) => {
+                  const option = priceOptions.find(
+                    (item) => String(getOptionId(item)) === value
+                  );
+                  setParams((prev) => ({
+                    ...prev,
+                    price_option_id: value,
+                    quantity: getOptionDurationValue(option),
+                  }));
+                }}
+                priceOptions={priceOptions}
                 quantity={Number(params.quantity ?? 1)}
+                selectedPriceOptionId={(params as any).price_option_id}
                 showOriginalPrice={subscribe?.show_original_price}
                 unitTime={subscribe?.unit_time}
               />
@@ -166,7 +211,11 @@ export default function Purchase({
             </div>
             <Button
               className="fixed bottom-0 left-0 w-full md:relative md:mt-6"
-              disabled={loading || !params.payment}
+              disabled={
+                loading ||
+                !params.payment ||
+                (priceOptions.length > 0 && !(params as any).price_option_id)
+              }
               onClick={handleSubmit}
             >
               {loading && <LoaderCircle className="mr-2 animate-spin" />}

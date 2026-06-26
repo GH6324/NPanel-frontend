@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "NPanel Common API",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "description": "Generated from the NPanel backend OpenAPI definition. Source: NPanel-backend/openapi.yaml."
   },
   "servers": [
@@ -5543,6 +5543,82 @@
           "simnetFallbackTlsSni": {
             "type": "string"
           },
+          "simnetInboundMaxStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInboundMaxHandlerTasksPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetStreamEventChannelCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetStreamDataChannelCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetTargetDialTimeoutMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetTargetMaxConcurrentDials": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetEgressBlockLoopback": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockPrivate": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockLinkLocal": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockMetadata": {
+            "type": "boolean"
+          },
+          "simnetSendWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetRecvWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetMaxConcurrentStreams": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInitialWindowSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetMaxFrameSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxConcurrentStreams": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientSessionIdleTimeoutSecs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInboundMaxUdpStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxUdpSessions": {
+            "type": "integer",
+            "format": "int32"
+          },
           "omniflowCarrier": {
             "type": "string",
             "description": "OmniFlow 基础配置"
@@ -6046,6 +6122,40 @@
           }
         }
       },
+      "api.admin.subscribe.v1.BatchDeleteSubscribeCategoryData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.BatchDeleteSubscribeCategoryReply": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/api.admin.subscribe.v1.BatchDeleteSubscribeCategoryData"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.BatchDeleteSubscribeCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "api.admin.subscribe.v1.BatchDeleteSubscribeData": {
         "type": "object",
         "properties": {
@@ -6119,6 +6229,54 @@
           }
         },
         "description": "BatchDeleteSubscribeRequest 批量删除订阅套餐请求"
+      },
+      "api.admin.subscribe.v1.CreateSubscribeCategoryData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.CreateSubscribeCategoryReply": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/api.admin.subscribe.v1.CreateSubscribeCategoryData"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.CreateSubscribeCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "CreateSubscribeCategoryRequest 创建商品分类请求"
       },
       "api.admin.subscribe.v1.CreateSubscribeData": {
         "type": "object",
@@ -6241,6 +6399,9 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -6297,9 +6458,46 @@
           },
           "autoCreateGroup": {
             "type": "boolean"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.admin.subscribe.v1.SubscribePriceOption"
+            }
           }
         },
         "description": "CreateSubscribeRequest 创建订阅套餐请求"
+      },
+      "api.admin.subscribe.v1.DeleteSubscribeCategoryData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.DeleteSubscribeCategoryReply": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/api.admin.subscribe.v1.DeleteSubscribeCategoryData"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.DeleteSubscribeCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
       },
       "api.admin.subscribe.v1.DeleteSubscribeData": {
         "type": "object",
@@ -6368,6 +6566,36 @@
           }
         },
         "description": "DeleteSubscribeRequest 删除订阅套餐请求"
+      },
+      "api.admin.subscribe.v1.GetSubscribeCategoryListData": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.admin.subscribe.v1.SubscribeCategoryInfo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.GetSubscribeCategoryListReply": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/api.admin.subscribe.v1.GetSubscribeCategoryListData"
+          }
+        }
       },
       "api.admin.subscribe.v1.GetSubscribeDetailsData": {
         "type": "object",
@@ -6501,6 +6729,40 @@
         },
         "description": "SortItem 排序项"
       },
+      "api.admin.subscribe.v1.SubscribeCategoryInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "description": "SubscribeCategoryInfo 商品分类信息"
+      },
       "api.admin.subscribe.v1.SubscribeDiscount": {
         "type": "object",
         "properties": {
@@ -6598,6 +6860,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -6657,6 +6925,12 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.admin.subscribe.v1.SubscribePriceOption"
+            }
           }
         },
         "description": "SubscribeInfo 订阅套餐信息"
@@ -6709,6 +6983,12 @@
           "quota": {
             "type": "integer",
             "format": "int32"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
           },
           "nodes": {
             "type": "array",
@@ -6772,9 +7052,65 @@
           },
           "sold": {
             "type": "string"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.admin.subscribe.v1.SubscribePriceOption"
+            }
           }
         },
         "description": "SubscribeItem 订阅套餐列表项（包含销量）"
+      },
+      "api.admin.subscribe.v1.SubscribePriceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subscribeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string"
+          },
+          "originalPrice": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sell": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "description": "SubscribePriceOption 商品价格档位"
       },
       "api.admin.subscribe.v1.SubscribeSortData": {
         "type": "object",
@@ -6831,6 +7167,57 @@
           }
         },
         "description": "TrafficLimit 流量限制配置"
+      },
+      "api.admin.subscribe.v1.UpdateSubscribeCategoryData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.UpdateSubscribeCategoryReply": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/api.admin.subscribe.v1.UpdateSubscribeCategoryData"
+          }
+        }
+      },
+      "api.admin.subscribe.v1.UpdateSubscribeCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "UpdateSubscribeCategoryRequest 更新商品分类请求"
       },
       "api.admin.subscribe.v1.UpdateSubscribeData": {
         "type": "object",
@@ -6959,6 +7346,9 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -7012,6 +7402,12 @@
           },
           "showOriginalPrice": {
             "type": "boolean"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.admin.subscribe.v1.SubscribePriceOption"
+            }
           }
         },
         "description": "UpdateSubscribeRequest 更新订阅套餐请求"
@@ -11173,6 +11569,21 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "priceOptionId": {
+            "type": "string"
+          },
+          "priceOptionName": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "optionPrice": {
+            "type": "string"
           }
         }
       },
@@ -11246,6 +11657,13 @@
           },
           "coupon": {
             "type": "string"
+          },
+          "priceOptionId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -11270,6 +11688,9 @@
             "type": "string"
           },
           "coupon": {
+            "type": "string"
+          },
+          "priceOptionId": {
             "type": "string"
           }
         }
@@ -11329,6 +11750,9 @@
             "type": "string"
           },
           "coupon": {
+            "type": "string"
+          },
+          "priceOptionId": {
             "type": "string"
           }
         }
@@ -11401,6 +11825,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -11460,6 +11890,12 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.order.v1.SubscribePriceOption"
+            }
           }
         }
       },
@@ -11470,6 +11906,55 @@
             "type": "string"
           },
           "discount": {
+            "type": "string"
+          }
+        }
+      },
+      "api.public.order.v1.SubscribePriceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subscribeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string"
+          },
+          "originalPrice": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sell": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
             "type": "string"
           }
         }
@@ -11577,6 +12062,27 @@
           }
         }
       },
+      "api.public.portal.v1.GetSubscriptionCatalogReply": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.portal.v1.SubscribeCategory"
+            }
+          },
+          "uncategorized": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.portal.v1.SubscribeInfo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "api.public.portal.v1.GetSubscriptionReply": {
         "type": "object",
         "properties": {
@@ -11655,6 +12161,9 @@
           },
           "coupon": {
             "type": "string"
+          },
+          "priceOptionId": {
+            "type": "string"
           }
         }
       },
@@ -11720,6 +12229,9 @@
           },
           "turnstileToken": {
             "type": "string"
+          },
+          "priceOptionId": {
+            "type": "string"
           }
         }
       },
@@ -11765,6 +12277,21 @@
           },
           "token": {
             "type": "string"
+          },
+          "priceOptionId": {
+            "type": "string"
+          },
+          "priceOptionName": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "optionPrice": {
+            "type": "string"
           }
         }
       },
@@ -11779,6 +12306,45 @@
           },
           "method": {
             "type": "string"
+          }
+        }
+      },
+      "api.public.portal.v1.SubscribeCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.portal.v1.SubscribeInfo"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.portal.v1.SubscribeCategory"
+            }
           }
         }
       },
@@ -11842,6 +12408,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -11901,6 +12473,61 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.portal.v1.SubscribePriceOption"
+            }
+          }
+        }
+      },
+      "api.public.portal.v1.SubscribePriceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subscribeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string"
+          },
+          "originalPrice": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sell": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
           }
         }
       },
@@ -11939,6 +12566,27 @@
           }
         },
         "description": "RedeemCodeRequest 兑换码请求"
+      },
+      "api.public.subscribe.v1.QuerySubscribeCatalogReply": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.subscribe.v1.SubscribeCategory"
+            }
+          },
+          "uncategorized": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.subscribe.v1.Subscribe"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
       },
       "api.public.subscribe.v1.QuerySubscribeListReply": {
         "type": "object",
@@ -12015,6 +12663,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "categoryId": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
           "nodes": {
             "type": "array",
             "items": {
@@ -12074,6 +12728,51 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "priceOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.subscribe.v1.SubscribePriceOption"
+            }
+          }
+        }
+      },
+      "api.public.subscribe.v1.SubscribeCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.subscribe.v1.Subscribe"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/api.public.subscribe.v1.SubscribeCategory"
+            }
           }
         }
       },
@@ -12086,6 +12785,55 @@
           "discount": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "api.public.subscribe.v1.SubscribePriceOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "subscribeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "durationUnit": {
+            "type": "string"
+          },
+          "durationValue": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string"
+          },
+          "originalPrice": {
+            "type": "string"
+          },
+          "inventory": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "show": {
+            "type": "boolean"
+          },
+          "sell": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
           }
         }
       },
@@ -13606,6 +14354,82 @@
           "simnetFallbackTlsSni": {
             "type": "string"
           },
+          "simnetInboundMaxStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInboundMaxHandlerTasksPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetStreamEventChannelCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetStreamDataChannelCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetTargetDialTimeoutMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetTargetMaxConcurrentDials": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetEgressBlockLoopback": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockPrivate": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockLinkLocal": {
+            "type": "boolean"
+          },
+          "simnetEgressBlockMetadata": {
+            "type": "boolean"
+          },
+          "simnetSendWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetRecvWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetMaxConcurrentStreams": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInitialWindowSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetMaxFrameSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxConcurrentStreams": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientSessionIdleTimeoutSecs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetInboundMaxUdpStreamsPerSession": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "simnetClientMaxUdpSessions": {
+            "type": "integer",
+            "format": "int32"
+          },
           "omniflowCarrier": {
             "type": "string",
             "description": "OmniFlow 基础配置"
@@ -13803,6 +14627,10 @@
             "items": {
               "$ref": "#/components/schemas/api.server.v1.OnlineUser"
             }
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "description": "PushOnlineUsersRequest 推送在线用户请求"
@@ -13846,6 +14674,10 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "description": "PushServerStatusRequest 推送服务器状态请求"
@@ -13880,6 +14712,10 @@
             "items": {
               "$ref": "#/components/schemas/api.server.v1.UserTraffic"
             }
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "description": "PushUserTrafficRequest 推送用户流量请求"

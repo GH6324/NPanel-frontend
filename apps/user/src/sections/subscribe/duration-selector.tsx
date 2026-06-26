@@ -9,6 +9,13 @@ import {
 import type React from "react";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  getOptionDurationUnit,
+  getOptionDurationValue,
+  getOptionOriginalPrice,
+  getOptionPrice,
+  type SubscribePriceOptionLike,
+} from "./price-options";
 
 interface DurationSelectorProps {
   quantity: number;
@@ -16,6 +23,9 @@ interface DurationSelectorProps {
   discounts?: Array<{ quantity: number | string; discount: number | string }>;
   onChange: (value: number) => void;
   showOriginalPrice?: boolean;
+  priceOptions?: SubscribePriceOptionLike[];
+  selectedPriceOptionId?: string | number;
+  onChangeOption?: (value: string) => void;
 }
 
 function toNumber(value?: number | string | null) {
@@ -29,13 +39,20 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
   discounts = [],
   onChange,
   showOriginalPrice = true,
+  priceOptions = [],
+  selectedPriceOptionId,
+  onChangeOption,
 }) => {
   const { t } = useTranslation("subscribe");
   const handleChange = useCallback(
     (value: string) => {
+      if (priceOptions.length > 0) {
+        onChangeOption?.(value);
+        return;
+      }
       onChange(Number(value));
     },
-    [onChange]
+    [onChange, onChangeOption, priceOptions.length]
   );
 
   const DurationOption: React.FC<{ value: string; label: string }> = ({
@@ -59,6 +76,18 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
   const discountPercentage = currentDiscount
     ? 100 - toNumber(currentDiscount)
     : 0;
+  const selectedOption = priceOptions.find(
+    (item) => String(item.id) === String(selectedPriceOptionId)
+  );
+  const formatOptionLabel = (item: SubscribePriceOptionLike) => {
+    const durationUnit = getOptionDurationUnit(item);
+    if (durationUnit === "NoLimit") {
+      return item.name || t("NoLimit", "No Limit");
+    }
+    const value = getOptionDurationValue(item);
+    const unit = t(durationUnit, durationUnit);
+    return item.name || `${value} / ${unit}`;
+  };
 
   return (
     <>
@@ -68,24 +97,54 @@ const DurationSelector: React.FC<DurationSelectorProps> = ({
       <RadioGroup
         className="flex flex-wrap gap-3"
         onValueChange={handleChange}
-        value={String(quantity)}
+        value={
+          priceOptions.length > 0
+            ? String(selectedPriceOptionId || "")
+            : String(quantity)
+        }
       >
-        {showOriginalPrice && unitTime !== "Minute" && (
-          <DurationOption label={`1 / ${t(unitTime)}`} value="1" />
-        )}
-        {discounts?.map((item) => (
-          <DurationOption
-            key={String(item.quantity)}
-            label={`${item.quantity} / ${t(unitTime)}`}
-            value={String(item.quantity)}
-          />
-        ))}
+        {priceOptions.length > 0
+          ? priceOptions.map((item) => (
+              <DurationOption
+                key={String(item.id)}
+                label={formatOptionLabel(item)}
+                value={String(item.id)}
+              />
+            ))
+          : (
+            <>
+              {showOriginalPrice && unitTime !== "Minute" && (
+                <DurationOption label={`1 / ${t(unitTime)}`} value="1" />
+              )}
+              {discounts?.map((item) => (
+                <DurationOption
+                  key={String(item.quantity)}
+                  label={`${item.quantity} / ${t(unitTime)}`}
+                  value={String(item.quantity)}
+                />
+              ))}
+            </>
+          )}
       </RadioGroup>
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground text-sm">
           {t("discountInfo", "Discount Info")}:
         </span>
-        {discountPercentage > 0 ? (
+        {selectedOption && getOptionOriginalPrice(selectedOption) ? (
+          <Badge className="h-6 text-sm" variant="destructive">
+            -
+            {(
+              (Math.max(
+                0,
+                getOptionOriginalPrice(selectedOption) -
+                  getOptionPrice(selectedOption)
+              ) /
+                Math.max(1, getOptionOriginalPrice(selectedOption))) *
+              100
+            ).toFixed(2)}
+            % {t("discount", "Discount")}
+          </Badge>
+        ) : discountPercentage > 0 ? (
           <Badge className="h-6 text-sm" variant="destructive">
             -{discountPercentage.toFixed(2)}% {t("discount", "Discount")}
           </Badge>

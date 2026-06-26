@@ -384,6 +384,7 @@ declare namespace API {
   type GetSubscriptionCatalogReply = any;
   type GetSubscriptionCatalogRequest = any;
   type PortalGetSubscriptionParams = any;
+  type PortalGetSubscriptionCatalogParams = any;
   type PortalPurchaseRequest = any;
   type PortalQueryPurchaseOrderParams = any;
   type PreCreateOrderReply = any;
@@ -540,6 +541,7 @@ declare namespace API {
   type SubscribeClient = any;
   type SubscribeConfig = any;
   type SubscribeDiscount = any;
+  type SubscribePriceOption = any;
   type SubscribeGetSubscribeDetailsParams = any;
   type SubscribeGetSubscribeListParams = any;
   type SubscribeGroupInfo = any;

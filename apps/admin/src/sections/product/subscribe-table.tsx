@@ -311,16 +311,35 @@ export default function SubscribeTable() {
         {
           accessorKey: "unit_price",
           header: t("unitPrice"),
-          cell: ({ row }) => (
-            <>
-              <Display type="currency" value={row.getValue("unit_price")} />/
-              {t(
-                row.original.unit_time
-                  ? `form.${row.original.unit_time}`
-                  : "form.Month"
-              )}
-            </>
-          ),
+          cell: ({ row }) => {
+            const options = row.original.price_options || [];
+            const option =
+              options.find((item) => item.is_default) || options[0];
+            const durationUnit = option?.duration_unit || row.original.unit_time;
+            const durationValue =
+              durationUnit === "NoLimit" ? 0 : Number(option?.duration_value || 1);
+            return (
+              <div className="flex flex-col gap-1">
+                <span>
+                  <Display
+                    type="currency"
+                    value={option?.price ?? row.getValue("unit_price")}
+                  />
+                  /{durationUnit === "NoLimit"
+                    ? t("form.NoLimit")
+                    : `${durationValue} ${t(durationUnit ? `form.${durationUnit}` : "form.Month")}`}
+                </span>
+                {options.length > 1 && (
+                  <Badge variant="outline">
+                    {t("form.priceOptionsCount", {
+                      count: options.length,
+                      defaultValue: "{{count}} options",
+                    })}
+                  </Badge>
+                )}
+              </div>
+            );
+          },
         },
         {
           accessorKey: "replacement",

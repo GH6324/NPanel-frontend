@@ -1069,68 +1069,7 @@ export default function SubscribeForm<T extends Record<string, any>>({
 
                 <TabsContent className="space-y-4" value="pricing">
                   <div className="grid gap-6">
-                    <div className="grid grid-cols-4 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="unit_price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("form.unitPrice")}</FormLabel>
-                            <FormControl>
-                              <EnhancedInput
-                                type="number"
-                                {...field}
-                                formatInput={(value) =>
-                                  unitConversion("centsToDollars", value)
-                                }
-                                formatOutput={(value) =>
-                                  unitConversion("dollarsToCents", value)
-                                }
-                                min={0}
-                                onValueChange={(value) => {
-                                  form.setValue(field.name, value);
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="unit_time"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("form.unitTime")}</FormLabel>
-                            <FormControl>
-                              <Combobox
-                                placeholder={t("form.selectUnitTime")}
-                                {...field}
-                                onChange={(value) => {
-                                  if (value) {
-                                    form.setValue(field.name, value);
-                                  }
-                                }}
-                                options={[
-                                  { label: t("form.Minute"), value: "Minute" },
-                                  { label: t("form.Hour"), value: "Hour" },
-                                  { label: t("form.Day"), value: "Day" },
-                                  { label: t("form.Week"), value: "Week" },
-                                  { label: t("form.Month"), value: "Month" },
-                                  { label: t("form.Year"), value: "Year" },
-                                  {
-                                    label: t("form.NoLimit"),
-                                    value: "NoLimit",
-                                  },
-                                ]}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
+                    <div className="grid gap-4 md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="replacement"

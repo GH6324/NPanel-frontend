@@ -442,6 +442,59 @@ export async function routingServiceRollbackRoutingReleaseAudit(
   );
 }
 
+/** 此处后端没有提供注释 GET /v1/admin/routing/trend_report */
+export async function routingServiceGetRoutingTrendReport(
+  params: API.RoutingServiceGetRoutingTrendReportParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.GetRoutingTrendReportReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/trend_report`,
+    {
+      method: "GET",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 GET /v1/admin/routing/drilldown_report */
+export async function routingServiceGetRoutingDrilldownReport(
+  params: API.RoutingServiceGetRoutingDrilldownReportParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.GetRoutingDrilldownReportReply>(
+    `${
+      import.meta.env.VITE_API_PREFIX || ""
+    }/v1/admin/routing/drilldown_report`,
+    {
+      method: "GET",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 GET /v1/admin/routing/notifications */
+export async function routingServiceListRoutingNotifications(
+  params: API.RoutingServiceListRoutingNotificationsParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.ListRoutingNotificationsReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/notifications`,
+    {
+      method: "GET",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
 /** 此处后端没有提供注释 PUT /v1/admin/routing/profile */
 export async function routingServiceUpdateRouteProfile(
   body: API.UpdateRouteProfileRequest,

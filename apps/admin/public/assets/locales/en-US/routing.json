@@ -27,6 +27,7 @@
   "dnsResolver": "DNS Resolver",
   "dnsResolvers": "DNS Resolvers",
   "dnsFailRate": "DNS Fail Rate",
+  "dnsFailures": "DNS Failures",
   "domain": "Domain",
   "defaultGrayReleaseName": "Default gray release",
   "edit": "Edit",
@@ -54,6 +55,7 @@
   "name": "Name",
   "outbound": "Outbound",
   "outboundFailRate": "Outbound Fail Rate",
+  "outboundFailures": "Outbound Failures",
   "outboundJson": "Outbound JSON",
   "outbounds": "Outbounds",
   "overview": "Health / Guard",
@@ -85,6 +87,7 @@
   "routing": "Routing",
   "routingHash": "Routing Hash",
   "routeEvents": "Route Events",
+  "routeFallbacks": "Route Fallbacks",
   "rule": "Rule",
   "rules": "Rules",
   "save": "Save",
@@ -117,6 +120,14 @@
   "noReleaseApprovals": "No release approvals",
   "noRollbackAudits": "No rollback audits",
   "noTopErrors": "No top errors",
+  "trendReport": "Trend Report",
+  "trendMarkers": "Trend Markers",
+  "drilldownReport": "Drilldown Report",
+  "notifications": "Notifications",
+  "noTrendPoints": "No trend points",
+  "noTrendMarkers": "No trend markers",
+  "noDrilldownItems": "No drilldown data",
+  "noNotifications": "No notifications",
   "rollbackAlreadyObserve": "Profile is already observe",
   "rollbackObserve": "Rollback to observe",
   "rollbackObserveDescription": "Switch the current profile mode back to observe while keeping configuration.",
@@ -217,6 +228,16 @@
     "critical": "critical",
     "warning": "warning",
     "info": "info"
+  },
+  "trendMarkerTypes": {
+    "release_confirm": "release confirm",
+    "rollback": "rollback"
+  },
+  "notificationSources": {
+    "release_gate": "release gate",
+    "release_report": "release report",
+    "analytics": "analytics",
+    "top_error": "top error"
   },
   "e2eItems": {
     "admin_profile": "Admin profile exists",

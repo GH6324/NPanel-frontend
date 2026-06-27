@@ -27,6 +27,7 @@
   "dnsResolver": "DNS 解析器",
   "dnsResolvers": "DNS 解析器",
   "dnsFailRate": "DNS 失败率",
+  "dnsFailures": "DNS 失败",
   "domain": "域名",
   "defaultGrayReleaseName": "默认灰度批次",
   "edit": "编辑",
@@ -54,6 +55,7 @@
   "name": "名称",
   "outbound": "出口",
   "outboundFailRate": "出口失败率",
+  "outboundFailures": "出口失败",
   "outboundJson": "出口 JSON",
   "outbounds": "出口",
   "overview": "健康 / 前置保护",
@@ -85,6 +87,7 @@
   "routing": "分流管理",
   "routingHash": "Routing Hash",
   "routeEvents": "路由事件",
+  "routeFallbacks": "路由回退",
   "rule": "规则",
   "rules": "规则",
   "save": "保存",
@@ -117,6 +120,14 @@
   "noReleaseApprovals": "暂无发布确认记录",
   "noRollbackAudits": "暂无回滚审计",
   "noTopErrors": "暂无错误聚合",
+  "trendReport": "趋势报表",
+  "trendMarkers": "发布标记",
+  "drilldownReport": "下钻报表",
+  "notifications": "通知告警",
+  "noTrendPoints": "暂无趋势数据",
+  "noTrendMarkers": "暂无发布标记",
+  "noDrilldownItems": "暂无下钻数据",
+  "noNotifications": "暂无通知告警",
   "rollbackAlreadyObserve": "当前 Profile 已经是 observe",
   "rollbackObserve": "回滚到 observe",
   "rollbackObserveDescription": "将当前 Profile 模式切回 observe，保留配置但停止 enforce。",
@@ -217,6 +228,16 @@
     "critical": "严重",
     "warning": "警告",
     "info": "提示"
+  },
+  "trendMarkerTypes": {
+    "release_confirm": "确认执行",
+    "rollback": "回滚"
+  },
+  "notificationSources": {
+    "release_gate": "发布准入",
+    "release_report": "发布报表",
+    "analytics": "分析报表",
+    "top_error": "错误聚合"
   },
   "e2eItems": {
     "admin_profile": "Admin Profile 已配置",

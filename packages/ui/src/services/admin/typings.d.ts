@@ -3082,6 +3082,113 @@ declare namespace API {
     data?: RoutingRollbackAudit;
   };
 
+  type RoutingTrendPoint = {
+    bucketStart?: string;
+    routeEvents?: number;
+    routeFallbacks?: number;
+    fallbackRateBp?: number;
+    dnsFailures?: number;
+    outboundFailures?: number;
+    healthReports?: number;
+    affectedReporters?: number;
+  };
+
+  type RoutingTrendMarker = {
+    at?: string;
+    type?: string;
+    label?: string;
+    operator?: string;
+  };
+
+  type RoutingTrendReport = {
+    profileCode?: string;
+    routingHash?: string;
+    windowMinutes?: string;
+    bucketMinutes?: string;
+    points?: RoutingTrendPoint[];
+    markers?: RoutingTrendMarker[];
+    generatedAt?: string;
+  };
+
+  type GetRoutingTrendReportReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingTrendReport;
+  };
+
+  type RoutingDrilldownItem = {
+    key?: string;
+    label?: string;
+    routeEvents?: number;
+    routeFallbacks?: number;
+    fallbackRateBp?: number;
+    dnsFailures?: number;
+    outboundFailures?: number;
+    healthReports?: number;
+    affectedReporters?: number;
+    lastError?: string;
+    lastSeenAt?: string;
+  };
+
+  type RoutingDrilldownReport = {
+    profileCode?: string;
+    routingHash?: string;
+    groupBy?: string;
+    windowMinutes?: string;
+    items?: RoutingDrilldownItem[];
+    generatedAt?: string;
+  };
+
+  type GetRoutingDrilldownReportReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingDrilldownReport;
+  };
+
+  type RoutingNotification = {
+    id?: string;
+    severity?: string;
+    title?: string;
+    message?: string;
+    source?: string;
+    profileCode?: string;
+    routingHash?: string;
+    createdAt?: string;
+  };
+
+  type RoutingNotificationListData = {
+    list?: RoutingNotification[];
+    total?: number;
+    generatedAt?: string;
+  };
+
+  type ListRoutingNotificationsReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingNotificationListData;
+  };
+
+  type RoutingServiceGetRoutingTrendReportParams = {
+    profileCode?: string;
+    routingHash?: string;
+    windowMinutes?: string;
+    bucketMinutes?: string;
+  };
+
+  type RoutingServiceGetRoutingDrilldownReportParams = {
+    profileCode?: string;
+    routingHash?: string;
+    groupBy?: string;
+    windowMinutes?: string;
+  };
+
+  type RoutingServiceListRoutingNotificationsParams = {
+    profileCode?: string;
+    routingHash?: string;
+    windowMinutes?: string;
+    severity?: string;
+  };
+
   type RoutingServiceListRoutingHealthReportsParams = {
     page?: string;
     size?: string;

@@ -39,16 +39,19 @@ import {
   routingServiceDeleteUnlockService,
   routingServiceGetRoutingAnalytics,
   routingServiceGetRoutingCapabilityMatrix,
+  routingServiceGetRoutingDrilldownReport,
   routingServiceGetRoutingE2EChecklist,
   routingServiceGetRoutingOverview,
   routingServiceGetRoutingReleaseGate,
   routingServiceGetRoutingReleaseReport,
+  routingServiceGetRoutingTrendReport,
   routingServiceListDnsResolvers,
   routingServiceListRouteOutbounds,
   routingServiceListRouteProfiles,
   routingServiceListRouteRules,
   routingServiceListRoutingHealthReports,
   routingServiceListRoutingGrayReleases,
+  routingServiceListRoutingNotifications,
   routingServiceListRoutingRouteEvents,
   routingServiceListUnlockServices,
   routingServicePreviewRouteConfig,
@@ -198,6 +201,33 @@ function basisPointsCell(value: unknown) {
     return "0.00%";
   }
   return `${(parsed / 100).toFixed(2)}%`;
+}
+
+function trendBarWidth(value: unknown) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return "2%";
+  }
+  return `${Math.min(100, parsed / 100)}%`;
+}
+
+function timestampCell(value: unknown) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return "-";
+  }
+  return new Date(parsed * 1000).toLocaleString();
+}
+
+function compactTimestampCell(value: unknown) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return "-";
+  }
+  return new Date(parsed * 1000).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 const defaultReleaseThresholds: Required<API.RoutingReleaseThresholds> = {
@@ -637,6 +667,14 @@ function RoutingOverviewPanel() {
   );
   const [releaseReport, setReleaseReport] =
     useState<API.RoutingReleaseReport | null>(null);
+  const [trendReport, setTrendReport] = useState<API.RoutingTrendReport | null>(
+    null
+  );
+  const [drilldownReport, setDrilldownReport] =
+    useState<API.RoutingDrilldownReport | null>(null);
+  const [notifications, setNotifications] = useState<API.RoutingNotification[]>(
+    []
+  );
   const [e2eChecklist, setE2eChecklist] =
     useState<API.RoutingE2EChecklistData | null>(null);
   const [capabilityMatrix, setCapabilityMatrix] =
@@ -662,6 +700,9 @@ function RoutingOverviewPanel() {
         analyticsResp,
         grayReleasesResp,
         releaseGateResp,
+        trendReportResp,
+        drilldownReportResp,
+        notificationsResp,
         e2eChecklistResp,
         capabilityMatrixResp,
       ] = await Promise.all([
@@ -683,6 +724,23 @@ function RoutingOverviewPanel() {
           windowMinutes: "60",
           ...thresholdParams,
         }),
+        routingServiceGetRoutingTrendReport({
+          profileCode,
+          routingHash,
+          windowMinutes: "1440",
+          bucketMinutes: "60",
+        }),
+        routingServiceGetRoutingDrilldownReport({
+          profileCode,
+          routingHash,
+          groupBy: "outbound",
+          windowMinutes: "1440",
+        }),
+        routingServiceListRoutingNotifications({
+          profileCode,
+          routingHash,
+          windowMinutes: "1440",
+        }),
         routingServiceGetRoutingE2EChecklist({ profileCode }),
         routingServiceGetRoutingCapabilityMatrix(),
       ]);
@@ -702,6 +760,9 @@ function RoutingOverviewPanel() {
       setGrayReleases(releases);
       setReleaseGate(releaseGateResp.data.data || null);
       setReleaseReport(releaseReportResp.data.data || null);
+      setTrendReport(trendReportResp.data.data || null);
+      setDrilldownReport(drilldownReportResp.data.data || null);
+      setNotifications(notificationsResp.data.data?.list || []);
       setE2eChecklist(e2eChecklistResp.data.data || null);
       setCapabilityMatrix(capabilityMatrixResp.data.data || null);
     } finally {
@@ -933,6 +994,177 @@ function RoutingOverviewPanel() {
           label={t("outboundFailRate", "Outbound Fail Rate")}
           value={basisPointsCell(analytics?.outboundFailRateBp)}
         />
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
+        <div>
+          <div className="mb-2 font-medium text-sm">
+            {t("trendReport", "Trend Report")}
+          </div>
+          <div className="grid gap-2">
+            {(trendReport?.points || []).length > 0 ? (
+              (trendReport?.points || []).slice(-6).map((point) => (
+                <div
+                  className="min-w-0 rounded-md border px-3 py-2"
+                  key={String(point.bucketStart)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-sm">
+                      {compactTimestampCell(point.bucketStart)}
+                    </span>
+                    <Badge variant="outline">
+                      {basisPointsCell(point.fallbackRateBp)}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded bg-muted">
+                    <div
+                      className="h-full rounded bg-primary"
+                      style={{ width: trendBarWidth(point.fallbackRateBp) }}
+                    />
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-1 text-muted-foreground text-xs">
+                    <span>
+                      {t("routeEvents", "Route Events")}:{" "}
+                      {point.routeEvents ?? 0}
+                    </span>
+                    <span>
+                      {t("routeFallbacks", "Route Fallbacks")}:{" "}
+                      {point.routeFallbacks ?? 0}
+                    </span>
+                    <span>
+                      {t("dnsFailures", "DNS Failures")}:{" "}
+                      {point.dnsFailures ?? 0}
+                    </span>
+                    <span>
+                      {t("outboundFailures", "Outbound Failures")}:{" "}
+                      {point.outboundFailures ?? 0}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+                {t("noTrendPoints", "No trend points")}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 font-medium text-sm">
+            {t("drilldownReport", "Drilldown Report")}
+          </div>
+          <div className="grid gap-2">
+            {(drilldownReport?.items || []).length > 0 ? (
+              (drilldownReport?.items || []).slice(0, 6).map((item) => (
+                <div
+                  className="min-w-0 rounded-md border px-3 py-2"
+                  key={item.key}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-sm">
+                      {item.label || item.key || "-"}
+                    </span>
+                    <Badge variant="outline">
+                      {basisPointsCell(item.fallbackRateBp)}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 truncate text-muted-foreground text-xs">
+                    {t("routeEvents", "Route Events")}: {item.routeEvents ?? 0}{" "}
+                    · {t("routeFallbacks", "Route Fallbacks")}:{" "}
+                    {item.routeFallbacks ?? 0} ·{" "}
+                    {t("affectedReporters", "Affected Reporters")}:{" "}
+                    {item.affectedReporters ?? 0}
+                  </div>
+                  <div className="mt-1 truncate text-muted-foreground text-xs">
+                    {t("dnsFailures", "DNS Failures")}: {item.dnsFailures ?? 0}{" "}
+                    · {t("outboundFailures", "Outbound Failures")}:{" "}
+                    {item.outboundFailures ?? 0} ·{" "}
+                    {timestampCell(item.lastSeenAt)}
+                  </div>
+                  {item.lastError ? (
+                    <div className="mt-1 truncate text-muted-foreground text-xs">
+                      {item.lastError}
+                    </div>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+                {t("noDrilldownItems", "No drilldown data")}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 font-medium text-sm">
+            {t("notifications", "Notifications")}
+          </div>
+          <div className="grid gap-2">
+            {notifications.length > 0 ? (
+              notifications.slice(0, 6).map((item) => (
+                <div
+                  className="min-w-0 rounded-md border px-3 py-2"
+                  key={item.id}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium text-sm">
+                      {item.title || "-"}
+                    </span>
+                    <Badge variant={severityBadgeVariant(item.severity)}>
+                      {translatedValue(t, "alertSeverities", item.severity)}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 truncate text-muted-foreground text-xs">
+                    {item.message || "-"}
+                  </div>
+                  <div className="mt-1 truncate text-muted-foreground text-xs">
+                    {translatedValue(t, "notificationSources", item.source)} ·{" "}
+                    {timestampCell(item.createdAt)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+                {t("noNotifications", "No notifications")}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 font-medium text-sm">
+          {t("trendMarkers", "Trend Markers")}
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          {(trendReport?.markers || []).length > 0 ? (
+            (trendReport?.markers || []).slice(0, 8).map((marker) => (
+              <div
+                className="min-w-0 rounded-md border px-3 py-2"
+                key={`${marker.type}:${marker.at}:${marker.operator}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium text-sm">
+                    {translatedValue(t, "trendMarkerTypes", marker.type)}
+                  </span>
+                  <Badge variant="outline">{marker.operator || "-"}</Badge>
+                </div>
+                <div className="mt-1 truncate text-muted-foreground text-xs">
+                  {marker.label || "-"}
+                </div>
+                <div className="mt-1 truncate text-muted-foreground text-xs">
+                  {timestampCell(marker.at)}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+              {t("noTrendMarkers", "No trend markers")}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-4">
@@ -1558,6 +1790,15 @@ function statusBadgeVariant(
   if (status === "healthy" || status === "ok") return "default";
   if (status === "failed" || status === "degraded") return "destructive";
   if (status === "disabled") return "secondary";
+  return "outline";
+}
+
+function severityBadgeVariant(
+  severity?: string
+): "default" | "secondary" | "destructive" | "outline" {
+  if (severity === "critical") return "destructive";
+  if (severity === "warning") return "outline";
+  if (severity === "info") return "secondary";
   return "outline";
 }
 

@@ -2812,6 +2812,87 @@ declare namespace API {
     data?: RoutingRouteEventListData;
   };
 
+  type RoutingAnalyticsItem = {
+    profileCode?: string;
+    routingHash?: string;
+    reporterId?: string;
+    routeEvents?: number;
+    routeDecisions?: number;
+    routeFallbacks?: number;
+    fallbackRateBp?: number;
+    dnsFailures?: number;
+    outboundFailures?: number;
+    affectedReporters?: number;
+    lastEventType?: string;
+    lastStatus?: string;
+    lastError?: string;
+    lastSeenAt?: string;
+  };
+
+  type RoutingAnalyticsError = {
+    key?: string;
+    kind?: string;
+    error?: string;
+    count?: number;
+  };
+
+  type RoutingAnalyticsData = {
+    items?: RoutingAnalyticsItem[];
+    topErrors?: RoutingAnalyticsError[];
+    totalRouteEvents?: number;
+    totalHealthReports?: number;
+    affectedReporters?: number;
+    fallbackRateBp?: number;
+    dnsFailRateBp?: number;
+    outboundFailRateBp?: number;
+    windowStartedAt?: string;
+  };
+
+  type GetRoutingAnalyticsReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingAnalyticsData;
+  };
+
+  type RoutingGrayRelease = {
+    id?: string;
+    profileCode?: string;
+    name?: string;
+    status?: string;
+    batchNo?: number;
+    targetType?: string;
+    targetIdsJson?: string;
+    operator?: string;
+    rollbackReason?: string;
+    startedAt?: string;
+    endedAt?: string;
+    releaseJson?: string;
+    targetCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
+  };
+
+  type RoutingGrayReleaseListData = {
+    list?: RoutingGrayRelease[];
+    total?: number;
+  };
+
+  type RoutingGrayReleaseData = {
+    release?: RoutingGrayRelease;
+  };
+
+  type ListRoutingGrayReleasesReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingGrayReleaseListData;
+  };
+
+  type RoutingGrayReleaseReply = {
+    code?: number;
+    message?: string;
+    data?: RoutingGrayReleaseData;
+  };
+
   type RoutingServiceListRoutingHealthReportsParams = {
     page?: string;
     size?: string;
@@ -2826,6 +2907,38 @@ declare namespace API {
     eventType?: string;
     profileCode?: string;
     reporterType?: string;
+  };
+
+  type RoutingServiceGetRoutingAnalyticsParams = {
+    profileCode?: string;
+    routingHash?: string;
+    windowMinutes?: string;
+  };
+
+  type RoutingServiceListRoutingGrayReleasesParams = {
+    page?: string;
+    size?: string;
+    profileCode?: string;
+    status?: string;
+  };
+
+  type RoutingServiceDeleteRoutingGrayReleaseParams = {
+    id?: string;
+  };
+
+  type CreateRoutingGrayReleaseRequest = {
+    release?: RoutingGrayRelease;
+  };
+
+  type UpdateRoutingGrayReleaseRequest = {
+    release?: RoutingGrayRelease;
+  };
+
+  type ActRoutingGrayReleaseRequest = {
+    id?: string;
+    action?: string;
+    operator?: string;
+    reason?: string;
   };
 
   type PreviewSubscribeTemplateData = {

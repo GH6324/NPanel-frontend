@@ -25,9 +25,11 @@ import {
 } from "@workspace/ui/composed/pro-table/pro-table";
 import {
   routingServiceCreateDnsResolver,
+  routingServiceActRoutingGrayRelease,
   routingServiceCreateRouteOutbound,
   routingServiceCreateRouteProfile,
   routingServiceCreateRouteRule,
+  routingServiceCreateRoutingGrayRelease,
   routingServiceCreateUnlockService,
   routingServiceDeleteDnsResolver,
   routingServiceDeleteRouteOutbound,
@@ -40,6 +42,8 @@ import {
   routingServiceListRouteProfiles,
   routingServiceListRouteRules,
   routingServiceListRoutingHealthReports,
+  routingServiceGetRoutingAnalytics,
+  routingServiceListRoutingGrayReleases,
   routingServiceListRoutingRouteEvents,
   routingServiceListUnlockServices,
   routingServicePreviewRouteConfig,
@@ -179,6 +183,14 @@ function dateTimeCell(value: unknown) {
     }
   }
   return dateCell(value);
+}
+
+function basisPointsCell(value: unknown) {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed)) {
+    return "0.00%";
+  }
+  return `${(parsed / 100).toFixed(2)}%`;
 }
 
 function toRequestParams(pagination: { page?: number; size?: number }) {
@@ -580,18 +592,42 @@ function RoutingOverviewPanel() {
   const [overview, setOverview] = useState<API.RoutingOverview | null>(null);
   const [reports, setReports] = useState<API.RoutingHealthReport[]>([]);
   const [routeEvents, setRouteEvents] = useState<API.RoutingRouteEvent[]>([]);
+  const [analytics, setAnalytics] = useState<API.RoutingAnalyticsData | null>(
+    null
+  );
+  const [grayReleases, setGrayReleases] = useState<API.RoutingGrayRelease[]>(
+    []
+  );
 
   const loadOverview = async () => {
     setLoading(true);
     try {
-      const [{ data }, reportsResp, routeEventsResp] = await Promise.all([
+      const [
+        { data },
+        reportsResp,
+        routeEventsResp,
+        analyticsResp,
+        grayReleasesResp,
+      ] = await Promise.all([
         routingServiceGetRoutingOverview(),
         routingServiceListRoutingHealthReports({ page: "1", size: "6" }),
         routingServiceListRoutingRouteEvents({ page: "1", size: "6" }),
+        routingServiceGetRoutingAnalytics({
+          profileCode: overview?.profileCode,
+          routingHash: overview?.routingHash,
+          windowMinutes: "60",
+        }),
+        routingServiceListRoutingGrayReleases({
+          page: "1",
+          size: "6",
+          profileCode: overview?.profileCode,
+        }),
       ]);
       setOverview(data.data || null);
       setReports(reportsResp.data.data?.list || []);
       setRouteEvents(routeEventsResp.data.data?.list || []);
+      setAnalytics(analyticsResp.data.data || null);
+      setGrayReleases(grayReleasesResp.data.data?.list || []);
     } finally {
       setLoading(false);
     }
@@ -604,6 +640,47 @@ function RoutingOverviewPanel() {
   const guards = overview?.guards || [];
   const health = overview?.health || [];
   const auditEvents = overview?.auditEvents || [];
+  const createGrayRelease = async () => {
+    const profileCode = overview?.profileCode;
+    if (!profileCode) {
+      toast.error(t("missingProfileCode", "Missing profile code"));
+      return;
+    }
+    await routingServiceCreateRoutingGrayRelease({
+      release: {
+        profileCode,
+        name: t("defaultGrayReleaseName", "Default gray release"),
+        status: "draft",
+        batchNo: 0,
+        targetType: "user",
+        targetIdsJson: "[]",
+        operator: "admin",
+        releaseJson: JSON.stringify({ basis: "admin_routing_p9" }),
+      },
+    });
+    toast.success(t("grayReleaseCreated", "Gray release created"));
+    await loadOverview();
+  };
+  const actGrayRelease = async (
+    release: API.RoutingGrayRelease,
+    action: string
+  ) => {
+    if (!release.id) {
+      toast.error(t("missingId", "Missing item ID"));
+      return;
+    }
+    await routingServiceActRoutingGrayRelease({
+      id: release.id,
+      action,
+      operator: "admin",
+      reason:
+        action === "rollback"
+          ? t("grayRollbackReason", "manual rollback from admin")
+          : "",
+    });
+    toast.success(t("grayActionSuccess", "Gray action saved"));
+    await loadOverview();
+  };
   const rollbackToObserve = async () => {
     const profileCode = overview?.profileCode;
     if (!profileCode) {
@@ -713,6 +790,132 @@ function RoutingOverviewPanel() {
           {overview.compileError}
         </div>
       ) : null}
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Metric
+          label={t("affectedReporters", "Affected Reporters")}
+          value={String(analytics?.affectedReporters ?? 0)}
+        />
+        <Metric
+          label={t("fallbackRate", "Fallback Rate")}
+          value={basisPointsCell(analytics?.fallbackRateBp)}
+        />
+        <Metric
+          label={t("dnsFailRate", "DNS Fail Rate")}
+          value={basisPointsCell(analytics?.dnsFailRateBp)}
+        />
+        <Metric
+          label={t("outboundFailRate", "Outbound Fail Rate")}
+          value={basisPointsCell(analytics?.outboundFailRateBp)}
+        />
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="font-medium text-sm">
+            {t("grayReleases", "Gray Releases")}
+          </div>
+          <Button
+            disabled={loading || !overview?.profileCode}
+            onClick={createGrayRelease}
+            size="sm"
+            variant="outline"
+          >
+            <Plus className="size-4" />
+            {t("createGrayRelease", "Create gray release")}
+          </Button>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {grayReleases.length > 0 ? (
+            grayReleases.map((release) => (
+              <div
+                className="min-w-0 rounded-md border px-3 py-2"
+                key={String(release.id)}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium text-sm">
+                    {release.name || release.profileCode}
+                  </span>
+                  <Badge variant={statusBadgeVariant(release.status)}>
+                    {translatedValue(t, "grayStatuses", release.status)}
+                  </Badge>
+                </div>
+                <div className="mt-1 truncate text-muted-foreground text-xs">
+                  {release.profileCode || "-"} · {t("batchNo", "Batch")}{" "}
+                  {release.batchNo ?? 0} ·{" "}
+                  {translatedValue(t, "grayTargetTypes", release.targetType)} ·{" "}
+                  {release.targetCount ?? 0}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => actGrayRelease(release, "advance")}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {t("publishNextBatch", "Next batch")}
+                  </Button>
+                  <Button
+                    onClick={() => actGrayRelease(release, "pause")}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {t("pauseGrayRelease", "Pause")}
+                  </Button>
+                  <ConfirmButton
+                    cancelText={t("cancel", "Cancel")}
+                    confirmText={t("confirm", "Confirm")}
+                    description={t(
+                      "rollbackGrayDescription",
+                      "Mark this gray release as rolled back."
+                    )}
+                    onConfirm={() => actGrayRelease(release, "rollback")}
+                    title={t("rollbackGrayRelease", "Rollback gray release")}
+                    trigger={
+                      <Button size="sm" variant="outline">
+                        {t("rollback", "Rollback")}
+                      </Button>
+                    }
+                  />
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+              {t("noGrayReleases", "No gray releases")}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 font-medium text-sm">
+          {t("topErrors", "Top Errors")}
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {(analytics?.topErrors || []).length > 0 ? (
+            (analytics?.topErrors || []).map((item) => (
+              <div
+                className="min-w-0 rounded-md border px-3 py-2"
+                key={`${item.kind}:${item.key}:${item.error}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-medium text-sm">
+                    {item.key || item.kind || "-"}
+                  </span>
+                  <Badge variant="outline">{item.count ?? 0}</Badge>
+                </div>
+                <div className="mt-1 truncate text-muted-foreground text-xs">
+                  {item.error || "-"}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-md border px-3 py-2 text-muted-foreground text-sm">
+              {t("noTopErrors", "No top errors")}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <div>

@@ -211,6 +211,113 @@ export async function routingServiceListRoutingRouteEvents(
   );
 }
 
+/** 此处后端没有提供注释 GET /v1/admin/routing/analytics */
+export async function routingServiceGetRoutingAnalytics(
+  params: API.RoutingServiceGetRoutingAnalyticsParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.GetRoutingAnalyticsReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/analytics`,
+    {
+      method: "GET",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 GET /v1/admin/routing/gray_releases */
+export async function routingServiceListRoutingGrayReleases(
+  params: API.RoutingServiceListRoutingGrayReleasesParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.ListRoutingGrayReleasesReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/gray_releases`,
+    {
+      method: "GET",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 POST /v1/admin/routing/gray_release */
+export async function routingServiceCreateRoutingGrayRelease(
+  body: API.CreateRoutingGrayReleaseRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.RoutingGrayReleaseReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/gray_release`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: body,
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 PUT /v1/admin/routing/gray_release */
+export async function routingServiceUpdateRoutingGrayRelease(
+  body: API.UpdateRoutingGrayReleaseRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.RoutingGrayReleaseReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/gray_release`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: body,
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 DELETE /v1/admin/routing/gray_release */
+export async function routingServiceDeleteRoutingGrayRelease(
+  params: API.RoutingServiceDeleteRoutingGrayReleaseParams,
+  options?: { [key: string]: any }
+) {
+  return request<API.DeleteRouteItemReply>(
+    `${import.meta.env.VITE_API_PREFIX || ""}/v1/admin/routing/gray_release`,
+    {
+      method: "DELETE",
+      params: {
+        ...params,
+      },
+      ...(options || {}),
+    }
+  );
+}
+
+/** 此处后端没有提供注释 POST /v1/admin/routing/gray_release/action */
+export async function routingServiceActRoutingGrayRelease(
+  body: API.ActRoutingGrayReleaseRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.RoutingGrayReleaseReply>(
+    `${
+      import.meta.env.VITE_API_PREFIX || ""
+    }/v1/admin/routing/gray_release/action`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: body,
+      ...(options || {}),
+    }
+  );
+}
+
 /** 此处后端没有提供注释 PUT /v1/admin/routing/profile */
 export async function routingServiceUpdateRouteProfile(
   body: API.UpdateRouteProfileRequest,

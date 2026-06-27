@@ -2,7 +2,9 @@
   "actions": {
     "add": "添加",
     "batchDelete": "批量删除",
+    "batchDeleteSuccess_one": "成功删除 {count} 个客户端",
     "batchDeleteSuccess_other": "成功删除 {count} 个客户端",
+    "batchDeleteWarning_one": "确定要删除选中的 {count} 个客户端吗？",
     "batchDeleteWarning_other": "确定要删除选中的 {count} 个客户端吗？",
     "cancel": "取消",
     "confirm": "确认",
@@ -84,6 +86,10 @@
       "basic": "基本信息",
       "download": "下载",
       "template": "模板"
+    },
+    "validation": {
+      "nameRequired": "客户端名称必填",
+      "userAgentRequiredSuffix": "必填"
     }
   },
   "outputFormats": {
@@ -92,6 +98,15 @@
     "json": "JSON",
     "plain": "纯文本",
     "yaml": "YAML"
+  },
+  "platforms": {
+    "android": "安卓",
+    "harmony": "HarmonyOS",
+    "ios": "iOS",
+    "linux": "Linux",
+    "mac": "Mac",
+    "macos": "Mac",
+    "windows": "Windows"
   },
   "protocol": {
     "title": "客户端管理"

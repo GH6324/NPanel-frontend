@@ -86,6 +86,10 @@
       "basic": "Basic Info",
       "download": "Downloads",
       "template": "Templates"
+    },
+    "validation": {
+      "nameRequired": "Client name is required",
+      "userAgentRequiredSuffix": "is required"
     }
   },
   "outputFormats": {
@@ -94,6 +98,15 @@
     "json": "JSON",
     "plain": "Plain Text",
     "yaml": "YAML"
+  },
+  "platforms": {
+    "android": "Android",
+    "harmony": "HarmonyOS",
+    "ios": "iOS",
+    "linux": "Linux",
+    "mac": "Mac",
+    "macos": "Mac",
+    "windows": "Windows"
   },
   "protocol": {
     "title": "Client Management"

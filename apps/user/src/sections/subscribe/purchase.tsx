@@ -20,6 +20,7 @@ import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
 import { useGlobalStore } from "@/stores/global";
 import { SubscribeBilling } from "./billing";
+import { SubscribeDetailContent } from "./description";
 import { SubscribeDetail } from "./detail";
 import {
   getDefaultPriceOption,
@@ -157,6 +158,7 @@ export default function Purchase({
                     : params.quantity,
                 }}
               />
+              <SubscribeDetailContent subscribe={subscribe} />
               <Separator />
               <SubscribeBilling
                 order={{

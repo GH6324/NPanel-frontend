@@ -10,13 +10,12 @@ import {
 } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
 import Empty from "@workspace/ui/composed/empty";
-import { Icon } from "@workspace/ui/composed/icon";
-import { cn } from "@workspace/ui/lib/utils";
 import { querySubscribeCatalog } from "@workspace/ui/services/user/subscribe";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
 import { buildSubscribeSections } from "./catalog";
+import { SubscribeFeatureList } from "./description";
 import { SubscribeDetail } from "./detail";
 import {
   getDefaultPriceOption,
@@ -72,65 +71,7 @@ export default function Subscribe() {
                     {item.name}
                   </CardHeader>
                   <CardContent className="*:!text-sm flex flex-grow flex-col gap-3">
-                    <ul className="flex flex-grow flex-col gap-3">
-                      {(() => {
-                        let parsedDescription: {
-                          description: string;
-                          features: Array<{
-                            icon: string;
-                            label: string;
-                            type: "default" | "success" | "destructive";
-                          }>;
-                        };
-                        try {
-                          parsedDescription = JSON.parse(item.description);
-                        } catch {
-                          parsedDescription = { description: "", features: [] };
-                        }
-
-                        const { description, features } = parsedDescription;
-                        return (
-                          <>
-                            {description && (
-                              <li className="text-muted-foreground">
-                                {description}
-                              </li>
-                            )}
-                            {features?.map(
-                              (
-                                feature: {
-                                  icon: string;
-                                  label: string;
-                                  type: "default" | "success" | "destructive";
-                                },
-                                index: number
-                              ) => (
-                                <li
-                                  className={cn("flex items-center gap-1", {
-                                    "text-muted-foreground line-through":
-                                      feature.type === "destructive",
-                                  })}
-                                  key={index}
-                                >
-                                  {feature.icon && (
-                                    <Icon
-                                      className={cn("size-5 text-primary", {
-                                        "text-green-500":
-                                          feature.type === "success",
-                                        "text-destructive":
-                                          feature.type === "destructive",
-                                      })}
-                                      icon={feature.icon}
-                                    />
-                                  )}
-                                  {feature.label}
-                                </li>
-                              )
-                            )}
-                          </>
-                        );
-                      })()}
-                    </ul>
+                    <SubscribeFeatureList subscribe={item} />
                     <SubscribeDetail
                       subscribe={{
                         ...item,
@@ -147,39 +88,34 @@ export default function Subscribe() {
                         item.show_original_price !== false;
                       const defaultOption = getDefaultPriceOption(item);
 
-                      const displayPrice =
-                        defaultOption
-                          ? getOptionPrice(defaultOption)
-                          : shouldShowOriginal || !hasDiscount
-                            ? item.unit_price
-                            : Math.round(
-                                toNumber(item.unit_price) *
-                                  toNumber(item.discount?.[0]?.quantity ?? 1) *
-                                  (toNumber(
-                                    item.discount?.[0]?.discount ?? 100
-                                  ) /
-                                    100)
-                              );
-
-                      const displayQuantity =
-                        defaultOption
-                          ? getOptionDurationValue(defaultOption)
-                          : shouldShowOriginal || !hasDiscount
-                            ? 1
-                            : toNumber(item.discount?.[0]?.quantity ?? 1);
-
-                      const unitTime =
-                        defaultOption
-                          ? unitTimeMap[getOptionDurationUnit(defaultOption)] ||
-                            t(
-                              getOptionDurationUnit(defaultOption),
-                              getOptionDurationUnit(defaultOption)
-                            )
-                          : unitTimeMap[item.unit_time!] ||
-                            t(
-                              item.unit_time || "Month",
-                              item.unit_time || "Month"
+                      const displayPrice = defaultOption
+                        ? getOptionPrice(defaultOption)
+                        : shouldShowOriginal || !hasDiscount
+                          ? item.unit_price
+                          : Math.round(
+                              toNumber(item.unit_price) *
+                                toNumber(item.discount?.[0]?.quantity ?? 1) *
+                                (toNumber(item.discount?.[0]?.discount ?? 100) /
+                                  100)
                             );
+
+                      const displayQuantity = defaultOption
+                        ? getOptionDurationValue(defaultOption)
+                        : shouldShowOriginal || !hasDiscount
+                          ? 1
+                          : toNumber(item.discount?.[0]?.quantity ?? 1);
+
+                      const unitTime = defaultOption
+                        ? unitTimeMap[getOptionDurationUnit(defaultOption)] ||
+                          t(
+                            getOptionDurationUnit(defaultOption),
+                            getOptionDurationUnit(defaultOption)
+                          )
+                        : unitTimeMap[item.unit_time!] ||
+                          t(
+                            item.unit_time || "Month",
+                            item.unit_time || "Month"
+                          );
 
                       return (
                         <h2 className="pb-8 font-semibold text-2xl sm:text-3xl">

@@ -6,7 +6,6 @@ import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardHeader } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
 import { EnhancedInput } from "@workspace/ui/composed/enhanced-input";
-import { Icon } from "@workspace/ui/composed/icon";
 import { cn } from "@workspace/ui/lib/utils";
 import { prePurchaseOrder, purchase } from "@workspace/ui/services/user/portal";
 import { LoaderCircle } from "lucide-react";
@@ -14,6 +13,10 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { SubscribeBilling } from "@/sections/subscribe/billing";
 import CouponInput from "@/sections/subscribe/coupon-input";
+import {
+  SubscribeDetailContent,
+  SubscribeFeatureList,
+} from "@/sections/subscribe/description";
 import { SubscribeDetail } from "@/sections/subscribe/detail";
 import DurationSelector from "@/sections/subscribe/duration-selector";
 import PaymentMethods from "@/sections/subscribe/payment-methods";
@@ -237,62 +240,7 @@ export default function Content({
         <Card>
           <CardContent className="grid gap-3 text-sm">
             <h2 className="font-semibold text-xl">{subscription.name}</h2>
-            <ul className="flex flex-grow flex-col gap-3">
-              {(() => {
-                let parsedDescription: {
-                  description: string;
-                  features: Array<{
-                    icon: string;
-                    label: string;
-                    type: "default" | "success" | "destructive";
-                  }>;
-                };
-                try {
-                  parsedDescription = JSON.parse(subscription.description);
-                } catch {
-                  parsedDescription = { description: "", features: [] };
-                }
-
-                const { description, features } = parsedDescription;
-                return (
-                  <>
-                    {description && (
-                      <li className="text-muted-foreground">{description}</li>
-                    )}
-                    {features?.map(
-                      (
-                        feature: {
-                          icon: string;
-                          label: string;
-                          type: "default" | "success" | "destructive";
-                        },
-                        index: number
-                      ) => (
-                        <li
-                          className={cn("flex items-center gap-1", {
-                            "text-muted-foreground line-through":
-                              feature.type === "destructive",
-                          })}
-                          key={index}
-                        >
-                          {feature.icon && (
-                            <Icon
-                              className={cn("size-5 text-primary", {
-                                "text-green-500": feature.type === "success",
-                                "text-destructive":
-                                  feature.type === "destructive",
-                              })}
-                              icon={feature.icon}
-                            />
-                          )}
-                          {feature.label}
-                        </li>
-                      )
-                    )}
-                  </>
-                );
-              })()}
-            </ul>
+            <SubscribeFeatureList subscribe={subscription} />
             <SubscribeDetail
               subscribe={{
                 ...subscription,
@@ -301,6 +249,7 @@ export default function Content({
                   : params.quantity,
               }}
             />
+            <SubscribeDetailContent subscribe={subscription} />
             <Separator />
             <SubscribeBilling
               order={{

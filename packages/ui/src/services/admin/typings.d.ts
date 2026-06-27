@@ -684,6 +684,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -4502,6 +4506,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -4536,6 +4544,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -4570,6 +4582,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -4767,6 +4783,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -4835,6 +4855,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];
@@ -5717,6 +5741,10 @@ declare namespace API {
     name?: string;
     language?: string;
     description?: string;
+    shortDescription?: string;
+    features?: string;
+    detailFormat?: string;
+    detailContent?: string;
     unitPrice?: string;
     unitTime?: string;
     discount?: SubscribeDiscount[];

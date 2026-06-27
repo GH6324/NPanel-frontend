@@ -4,7 +4,6 @@ import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { Check, Copy } from "lucide-react";
 import { useCallback, useState } from "react";
-import { copyText } from "../utils/clipboard.js";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -13,6 +12,7 @@ import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkToc from "remark-toc";
+import { copyText } from "../utils/clipboard.js";
 
 interface CodeBlockProps {
   className?: string;
@@ -77,11 +77,16 @@ function CodeBlock({ className, children, ...props }: CodeBlockProps) {
 }
 
 interface MarkdownProps {
+  allowHtml?: boolean;
   children: string;
   components?: Components;
 }
 
-export function Markdown({ children, components }: MarkdownProps) {
+export function Markdown({
+  allowHtml = true,
+  children,
+  components,
+}: MarkdownProps) {
   return (
     <div className="prose dark:prose-invert wrap-break-word w-full max-w-[unset]">
       <ReactMarkdown
@@ -234,7 +239,7 @@ export function Markdown({ children, components }: MarkdownProps) {
           },
           ...components,
         }}
-        rehypePlugins={[rehypeRaw, rehypeKatex]}
+        rehypePlugins={allowHtml ? [rehypeRaw, rehypeKatex] : [rehypeKatex]}
         remarkPlugins={[remarkGfm, remarkToc, remarkMath]}
       >
         {children}

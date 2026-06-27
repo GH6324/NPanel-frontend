@@ -7,13 +7,11 @@ import {
   CardHeader,
 } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
-import { Icon } from "@workspace/ui/composed/icon";
-import { cn } from "@workspace/ui/lib/utils";
 import { motion } from "framer-motion";
-import type { Key, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Display } from "@/components/display";
 import type { SubscribeCategorySection } from "@/sections/subscribe/catalog";
+import { SubscribeFeatureList } from "@/sections/subscribe/description";
 import { SubscribeDetail } from "@/sections/subscribe/detail";
 import {
   getDefaultPriceOption,
@@ -94,68 +92,10 @@ export function Content({ sections }: ProductShowcaseProps) {
                       {item.name}
                     </CardHeader>
                     <CardContent className="flex flex-grow flex-col gap-4 p-6 text-sm">
-                      <ul className="flex flex-grow flex-col gap-3">
-                        {(() => {
-                          let parsedDescription: {
-                            description: string;
-                            features: Array<{
-                              icon: string;
-                              label: ReactNode;
-                              type: "default" | "success" | "destructive";
-                            }>;
-                          };
-                          try {
-                            parsedDescription = JSON.parse(item.description);
-                          } catch {
-                            parsedDescription = {
-                              description: "",
-                              features: [],
-                            };
-                          }
-
-                          const { description, features } = parsedDescription;
-                          return (
-                            <>
-                              {description && (
-                                <li className="text-muted-foreground">
-                                  {description}
-                                </li>
-                              )}
-                              {features?.map(
-                                (
-                                  feature: {
-                                    type: string;
-                                    icon: string;
-                                    label: ReactNode;
-                                  },
-                                  index: Key
-                                ) => (
-                                  <li
-                                    className={cn("flex items-center gap-2", {
-                                      "text-muted-foreground line-through":
-                                        feature.type === "destructive",
-                                    })}
-                                    key={index}
-                                  >
-                                    {feature.icon && (
-                                      <Icon
-                                        className={cn("size-5 text-primary", {
-                                          "text-green-500":
-                                            feature.type === "success",
-                                          "text-destructive":
-                                            feature.type === "destructive",
-                                        })}
-                                        icon={feature.icon}
-                                      />
-                                    )}
-                                    {feature.label}
-                                  </li>
-                                )
-                              )}
-                            </>
-                          );
-                        })()}
-                      </ul>
+                      <SubscribeFeatureList
+                        className="gap-3"
+                        subscribe={item}
+                      />
                       <SubscribeDetail
                         subscribe={{
                           ...item,
@@ -172,41 +112,36 @@ export function Content({ sections }: ProductShowcaseProps) {
                           item.show_original_price !== false;
                         const defaultOption = getDefaultPriceOption(item);
 
-                        const displayPrice =
-                          defaultOption
-                            ? getOptionPrice(defaultOption)
-                            : shouldShowOriginal || !hasDiscount
-                              ? item.unit_price
-                              : Math.round(
-                                  toNumber(item.unit_price) *
-                                    toNumber(
-                                      item.discount?.[0]?.quantity ?? 1
-                                    ) *
-                                    (toNumber(
-                                      item.discount?.[0]?.discount ?? 100
-                                    ) /
-                                      100)
-                                );
-
-                        const displayQuantity =
-                          defaultOption
-                            ? getOptionDurationValue(defaultOption)
-                            : shouldShowOriginal || !hasDiscount
-                              ? 1
-                              : toNumber(item.discount?.[0]?.quantity ?? 1);
-
-                        const unitTime =
-                          defaultOption
-                            ? unitTimeMap[getOptionDurationUnit(defaultOption)] ||
-                              t(
-                                getOptionDurationUnit(defaultOption),
-                                getOptionDurationUnit(defaultOption)
-                              )
-                            : unitTimeMap[item.unit_time!] ||
-                              t(
-                                item.unit_time || "Month",
-                                item.unit_time || "Month"
+                        const displayPrice = defaultOption
+                          ? getOptionPrice(defaultOption)
+                          : shouldShowOriginal || !hasDiscount
+                            ? item.unit_price
+                            : Math.round(
+                                toNumber(item.unit_price) *
+                                  toNumber(item.discount?.[0]?.quantity ?? 1) *
+                                  (toNumber(
+                                    item.discount?.[0]?.discount ?? 100
+                                  ) /
+                                    100)
                               );
+
+                        const displayQuantity = defaultOption
+                          ? getOptionDurationValue(defaultOption)
+                          : shouldShowOriginal || !hasDiscount
+                            ? 1
+                            : toNumber(item.discount?.[0]?.quantity ?? 1);
+
+                        const unitTime = defaultOption
+                          ? unitTimeMap[getOptionDurationUnit(defaultOption)] ||
+                            t(
+                              getOptionDurationUnit(defaultOption),
+                              getOptionDurationUnit(defaultOption)
+                            )
+                          : unitTimeMap[item.unit_time!] ||
+                            t(
+                              item.unit_time || "Month",
+                              item.unit_time || "Month"
+                            );
 
                         return (
                           <motion.h2

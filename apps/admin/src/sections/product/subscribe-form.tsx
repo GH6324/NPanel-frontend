@@ -45,9 +45,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
+import { Textarea } from "@workspace/ui/components/textarea";
 import { Combobox } from "@workspace/ui/composed/combobox";
 import { ArrayInput } from "@workspace/ui/composed/dynamic-inputs";
-import { JSONEditor } from "@workspace/ui/composed/editor/index";
+import {
+  HTMLEditor,
+  MarkdownEditor,
+} from "@workspace/ui/composed/editor/index";
 import { EnhancedInput } from "@workspace/ui/composed/enhanced-input";
 import { Icon } from "@workspace/ui/composed/icon";
 import {
@@ -94,6 +98,11 @@ const defaultValues = {
   node_group_ids: [],
   unit_time: "Month",
   price_options: [],
+  short_description: "",
+  features: [],
+  detail_format: "markdown",
+  detail_content: "",
+  legacy_description_input: "",
   deduction_ratio: 0,
   purchase_with_discount: false,
   reset_cycle: 0,
@@ -108,6 +117,95 @@ function toNumber(value: unknown): number | undefined {
   if (value === "" || value === null || value === undefined) return;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+type SubscribeFeatureEditorItem = {
+  icon: string;
+  label: string;
+  type: "default" | "success" | "destructive";
+};
+
+type SubscribeDetailFormat = "markdown" | "html" | "text";
+
+function parseJSON(value?: unknown) {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFeatureItems(value?: unknown): SubscribeFeatureEditorItem[] {
+  const parsed = typeof value === "string" ? parseJSON(value) : value;
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const raw = item as Record<string, unknown>;
+      const label = raw.label ?? raw.feature ?? raw.text;
+      if (label === undefined || label === null || label === "") return null;
+      const support = raw.support;
+      const rawType = String(raw.type || "").toLowerCase();
+      const type =
+        rawType === "success" ||
+        rawType === "destructive" ||
+        rawType === "default"
+          ? rawType
+          : support === false
+            ? "destructive"
+            : support === true
+              ? "success"
+              : "default";
+      return {
+        icon: typeof raw.icon === "string" ? raw.icon : "",
+        label: String(label),
+        type,
+      };
+    })
+    .filter(Boolean) as SubscribeFeatureEditorItem[];
+}
+
+function parseLegacyDescription(description?: unknown) {
+  const parsed = parseJSON(description);
+  if (Array.isArray(parsed)) {
+    return {
+      shortDescription: "",
+      features: normalizeFeatureItems(parsed),
+      detailContent: "",
+      detailFormat: "markdown",
+    };
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return {
+      shortDescription:
+        typeof description === "string" ? description.trim() : "",
+      features: [] as SubscribeFeatureEditorItem[],
+      detailContent: "",
+      detailFormat: "markdown",
+    };
+  }
+  const object = parsed as Record<string, unknown>;
+  return {
+    shortDescription: String(object.description || "").trim(),
+    features: normalizeFeatureItems(object.features),
+    detailContent: String(object.detail_content || object.content || "").trim(),
+    detailFormat: String(object.detail_format || "markdown"),
+  };
+}
+
+function normalizeDetailFormat(value?: unknown): SubscribeDetailFormat {
+  const format = String(value || "").toLowerCase();
+  if (format === "html") return "html";
+  if (format === "text" || format === "plain") return "text";
+  return "markdown";
+}
+
+function buildLegacyDescription(values: Record<string, any>) {
+  return JSON.stringify({
+    description: values.short_description || "",
+    features: normalizeFeatureItems(values.features),
+  });
 }
 
 function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
@@ -153,6 +251,13 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
   if (!priceOptions.some((item) => item.is_default)) {
     priceOptions[0]!.is_default = true;
   }
+  const legacyDescription = parseLegacyDescription(processedValues.description);
+  const features =
+    processedValues.features !== undefined &&
+    processedValues.features !== null &&
+    processedValues.features !== ""
+      ? normalizeFeatureItems(processedValues.features)
+      : legacyDescription.features;
 
   return {
     ...processedValues,
@@ -204,6 +309,24 @@ function normalizeSubscribeValues<T extends Record<string, any>>(values?: T) {
           speed_limit: toNumber(item.speed_limit) ?? 0,
         }))
       : [],
+    short_description:
+      processedValues.short_description ??
+      processedValues.shortDescription ??
+      legacyDescription.shortDescription,
+    features,
+    detail_format: normalizeDetailFormat(
+      processedValues.detail_format ??
+        processedValues.detailFormat ??
+        legacyDescription.detailFormat
+    ),
+    detail_content:
+      processedValues.detail_content ??
+      processedValues.detailContent ??
+      legacyDescription.detailContent,
+    legacy_description_input:
+      typeof processedValues.description === "string"
+        ? processedValues.description
+        : "",
   };
 }
 
@@ -546,6 +669,124 @@ function PriceOptionsEditor({
   );
 }
 
+function FeatureEditor({
+  onChange,
+  value = [],
+}: {
+  onChange: (value: SubscribeFeatureEditorItem[]) => void;
+  value?: SubscribeFeatureEditorItem[];
+}) {
+  const { t } = useTranslation("product");
+  const safeValue = Array.isArray(value) ? value : [];
+  const typeOptions = [
+    { label: t("form.featureDefault", "Default"), value: "default" },
+    { label: t("form.featureSuccess", "Included"), value: "success" },
+    {
+      label: t("form.featureDestructive", "Not included"),
+      value: "destructive",
+    },
+  ];
+
+  const updateItem = (
+    index: number,
+    patch: Partial<SubscribeFeatureEditorItem>
+  ) => {
+    onChange(
+      safeValue.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      )
+    );
+  };
+
+  const addItem = () => {
+    onChange([
+      ...safeValue,
+      {
+        icon: "uil:shield-check",
+        label: "",
+        type: "default",
+      },
+    ]);
+  };
+
+  const removeItem = (index: number) => {
+    onChange(safeValue.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="space-y-2">
+        {safeValue.map((item, index) => (
+          <div
+            className="grid gap-3 rounded-lg border bg-card p-3 lg:grid-cols-[minmax(140px,0.7fr)_minmax(240px,1.4fr)_minmax(160px,0.8fr)_44px] lg:items-end"
+            key={`${item.label}-${index}`}
+          >
+            <div className="space-y-2">
+              <Label>{t("form.featureIcon", "Icon")}</Label>
+              <EnhancedInput
+                onValueChange={(icon) => updateItem(index, { icon })}
+                placeholder="uil:shield-check"
+                value={item.icon}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("form.featureLabel", "Feature")}</Label>
+              <EnhancedInput
+                onValueChange={(label) => updateItem(index, { label })}
+                placeholder={t("form.featureLabelPlaceholder", "Feature text")}
+                value={item.label}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("form.featureType", "Status")}</Label>
+              <Select
+                onValueChange={(type) =>
+                  updateItem(index, {
+                    type: type as SubscribeFeatureEditorItem["type"],
+                  })
+                }
+                value={item.type || "default"}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex h-9 items-center justify-end">
+              <Button
+                aria-label={t("form.deleteFeature", "Delete feature")}
+                className="text-destructive"
+                onClick={() => removeItem(index)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <Trash2Icon className="size-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Button
+        className="w-full"
+        onClick={addItem}
+        type="button"
+        variant="outline"
+      >
+        <PlusIcon className="size-4" />
+        {t("form.addFeature", "Add Feature")}
+      </Button>
+    </div>
+  );
+}
+
 export default function SubscribeForm<T extends Record<string, any>>({
   onSubmit,
   initialValues,
@@ -574,6 +815,19 @@ export default function SubscribeForm<T extends Record<string, any>>({
   const formSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
+    short_description: z.string().optional(),
+    features: z
+      .array(
+        z.object({
+          icon: z.string().optional(),
+          label: z.string(),
+          type: z.enum(["default", "success", "destructive"]),
+        })
+      )
+      .optional(),
+    detail_format: z.enum(["markdown", "html", "text"]).optional(),
+    detail_content: z.string().optional(),
+    legacy_description_input: z.string().optional(),
     unit_price: z.number(),
     unit_time: z.string(),
     price_options: z
@@ -630,8 +884,8 @@ export default function SubscribeForm<T extends Record<string, any>>({
       .optional(),
   });
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<Record<string, any>>({
+    resolver: zodResolver(formSchema) as any,
     defaultValues: normalizeSubscribeValues(initialValues),
   });
 
@@ -647,9 +901,14 @@ export default function SubscribeForm<T extends Record<string, any>>({
     );
     const defaultOption =
       priceOptions.find((item) => item.is_default) || priceOptions[0];
-    const submitData = {
-      ...data,
+    const { legacy_description_input: _legacyDescriptionInput, ...formData } =
+      data;
+    const submitData: Record<string, any> = {
+      ...formData,
       category_id: data.category_id ? Number(data.category_id) : 0,
+      description: buildLegacyDescription(data),
+      features: JSON.stringify(normalizeFeatureItems(data.features)),
+      detail_format: normalizeDetailFormat(data.detail_format),
       discount: [],
       price_options: priceOptions,
       show_original_price: false,
@@ -670,6 +929,39 @@ export default function SubscribeForm<T extends Record<string, any>>({
   } = useNode();
 
   const tagGroups = getAllAvailableTags();
+
+  const applyLegacyDescriptionInput = (value: string) => {
+    form.setValue("legacy_description_input", value, { shouldDirty: true });
+    const parsed = parseJSON(value);
+    if (!parsed) return;
+
+    if (Array.isArray(parsed)) {
+      form.setValue("features", normalizeFeatureItems(parsed), {
+        shouldDirty: true,
+      });
+      return;
+    }
+
+    if (typeof parsed !== "object") return;
+
+    const legacyDescription = parseLegacyDescription(value);
+    form.setValue("short_description", legacyDescription.shortDescription, {
+      shouldDirty: true,
+    });
+    form.setValue("features", legacyDescription.features, {
+      shouldDirty: true,
+    });
+    form.setValue(
+      "detail_format",
+      normalizeDetailFormat(legacyDescription.detailFormat),
+      {
+        shouldDirty: true,
+      }
+    );
+    form.setValue("detail_content", legacyDescription.detailContent, {
+      shouldDirty: true,
+    });
+  };
 
   // Fetch node groups (exclude expired groups)
   const { data: nodeGroupsData } = useQuery({
@@ -769,13 +1061,20 @@ export default function SubscribeForm<T extends Record<string, any>>({
           <Form {...form}>
             <form className="pt-4" onSubmit={form.handleSubmit(handleSubmit)}>
               <Tabs className="w-full" defaultValue="basic">
-                <TabsList className="mb-6 grid w-full grid-cols-4">
+                <TabsList className="mb-6 grid w-full grid-cols-5">
                   <TabsTrigger
                     className="flex items-center gap-2"
                     value="basic"
                   >
                     <Settings className="h-4 w-4" />
                     {t("form.basic")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    className="flex items-center gap-2"
+                    value="content"
+                  >
+                    <Icon className="h-4 w-4" icon="uil:document-layout-left" />
+                    {t("form.content", "Content")}
                   </TabsTrigger>
                   <TabsTrigger
                     className="flex items-center gap-2"
@@ -1011,84 +1310,181 @@ export default function SubscribeForm<T extends Record<string, any>>({
                         )}
                       />
                     </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent className="space-y-6" value="content">
+                  <FormField
+                    control={form.control}
+                    name="legacy_description_input"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("form.legacyDescriptionJson", "Legacy JSON")}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-28 font-mono text-xs"
+                            onChange={(event) =>
+                              applyLegacyDescriptionInput(event.target.value)
+                            }
+                            placeholder='{"description":"Fast and stable","features":[{"icon":"uil:shield-check","label":"Premium nodes","type":"success"}],"detail_format":"markdown","detail_content":"### Details"}'
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            "form.legacyDescriptionJsonDescription",
+                            "Paste the old description JSON here to import it into the fields below."
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="short_description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("form.shortDescription", "Card Summary")}
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-20"
+                            onChange={(event) =>
+                              form.setValue(field.name, event.target.value)
+                            }
+                            placeholder={t(
+                              "form.shortDescriptionPlaceholder",
+                              "A short summary shown on package cards."
+                            )}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="features"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t("form.packageFeatures", "Package Features")}
+                        </FormLabel>
+                        <FormControl>
+                          <FeatureEditor
+                            onChange={(features) =>
+                              form.setValue(field.name, features, {
+                                shouldDirty: true,
+                              })
+                            }
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            "form.packageFeaturesDescription",
+                            "These rows render as the compact feature list on package cards."
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid gap-4 md:grid-cols-[220px_1fr]">
                     <FormField
                       control={form.control}
-                      name="description"
+                      name="detail_format"
                       render={({ field }) => (
                         <FormItem>
+                          <FormLabel>
+                            {t("form.detailFormat", "Detail Format")}
+                          </FormLabel>
                           <FormControl>
-                            <JSONEditor
-                              onChange={(value: any) => {
+                            <Select
+                              onValueChange={(value) =>
                                 form.setValue(
                                   field.name,
-                                  JSON.stringify(value)
-                                );
-                              }}
-                              placeholder={{
-                                description: "description",
-                                features: [
-                                  {
-                                    type: "default",
-                                    icon: "",
-                                    label: "label",
-                                  },
-                                ],
-                              }}
-                              schema={{
-                                type: "object",
-                                properties: {
-                                  description: {
-                                    type: "string",
-                                    description:
-                                      "A brief description of the item.",
-                                  },
-                                  features: {
-                                    type: "array",
-                                    items: {
-                                      type: "object",
-                                      properties: {
-                                        icon: {
-                                          type: "string",
-                                          description:
-                                            "Enter an Iconify icon identifier (e.g., 'mdi:account').",
-                                          pattern: "^[a-z0-9]+:[a-z0-9-]+$",
-                                          examples: [
-                                            "uil:shield-check",
-                                            "uil:shield-exclamation",
-                                            "uil:database",
-                                            "uil:server",
-                                          ],
-                                        },
-                                        label: {
-                                          type: "string",
-                                          description:
-                                            "The label describing the feature.",
-                                        },
-                                        type: {
-                                          type: "string",
-                                          enum: [
-                                            "default",
-                                            "success",
-                                            "destructive",
-                                          ],
-                                          description:
-                                            "The type of feature, limited to specific values.",
-                                        },
-                                      },
-                                    },
-                                    description: "A list of feature objects.",
-                                  },
-                                },
-                                required: ["description", "features"],
-                                additionalProperties: false,
-                              }}
-                              title={t("form.description")}
-                              value={field.value && JSON.parse(field.value)}
-                            />
+                                  normalizeDetailFormat(value) as any
+                                )
+                              }
+                              value={field.value || "markdown"}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="markdown">
+                                  Markdown
+                                </SelectItem>
+                                <SelectItem value="text">
+                                  {t("form.plainText", "Plain Text")}
+                                </SelectItem>
+                                <SelectItem value="html">HTML</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </FormControl>
+                          <FormDescription>
+                            {t(
+                              "form.detailFormatDescription",
+                              "Markdown is recommended. HTML is rendered with a safe allowlist on the user side."
+                            )}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="detail_content"
+                      render={({ field }) => {
+                        const detailFormat = form.watch("detail_format");
+                        return (
+                          <FormItem>
+                            <FormLabel>
+                              {t("form.detailContent", "Detailed Description")}
+                            </FormLabel>
+                            <FormControl>
+                              {detailFormat === "html" ? (
+                                <HTMLEditor
+                                  onChange={(value) =>
+                                    form.setValue(field.name, value || "")
+                                  }
+                                  value={field.value || ""}
+                                  wordWrap
+                                />
+                              ) : detailFormat === "text" ? (
+                                <Textarea
+                                  className="min-h-64"
+                                  onChange={(event) =>
+                                    form.setValue(
+                                      field.name,
+                                      event.target.value
+                                    )
+                                  }
+                                  value={field.value || ""}
+                                />
+                              ) : (
+                                <MarkdownEditor
+                                  onChange={(value) =>
+                                    form.setValue(field.name, value || "")
+                                  }
+                                  value={field.value || ""}
+                                  wordWrap
+                                />
+                              )}
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   </div>
                 </TabsContent>

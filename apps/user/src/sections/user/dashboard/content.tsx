@@ -364,11 +364,13 @@ export default function Content() {
                       {expireTime !== 0 && (
                         <Renewal id={item.id} subscribe={item.subscribe} />
                       )}
-                      <Unsubscribe
-                        allowDeduction={item.subscribe.allow_deduction}
-                        id={item.id}
-                        onSuccess={refetch}
-                      />
+                      {status === 1 && (
+                        <Unsubscribe
+                          allowDeduction={item.subscribe.allow_deduction}
+                          id={item.id}
+                          onSuccess={refetch}
+                        />
+                      )}
                     </div>
                   )}
                 </CardHeader>

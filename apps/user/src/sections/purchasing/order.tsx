@@ -31,6 +31,7 @@ import {
   getCheckoutErrorMessage,
   InsufficientBalanceDialog,
   type InsufficientBalanceInfo,
+  isCheckoutOrderStatusError,
   parseInsufficientBalanceError,
 } from "@/sections/user/payment/insufficient-balance-dialog";
 import StripePayment from "@/sections/user/payment/stripe";
@@ -61,7 +62,7 @@ export default function Order() {
   const [checkoutBlocked, setCheckoutBlocked] = useState<boolean>(false);
   const search = useSearch({ from: "/(main)/purchasing/order/" });
 
-  const { data } = useQuery({
+  const { data, refetch: refetchOrder } = useQuery({
     enabled,
     queryKey: ["queryPurchaseOrder", orderNo],
     queryFn: async () => {
@@ -99,6 +100,13 @@ export default function Order() {
           { skipErrorHandler: true }
         );
       } catch (error) {
+        if (isCheckoutOrderStatusError(error)) {
+          const orderResult = await refetchOrder();
+          if ([2, 5].includes(toNumber(orderResult.data?.status))) {
+            await getUserInfo();
+            return null;
+          }
+        }
         const balanceError = parseInsufficientBalanceError(error);
         if (balanceError) {
           setInsufficientBalance(balanceError);

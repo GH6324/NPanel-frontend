@@ -56,6 +56,16 @@ export function getCheckoutErrorMessage(error: unknown) {
   return data.message ?? data.msg;
 }
 
+export function isCheckoutOrderStatusError(error: unknown) {
+  const data = getErrorData(error);
+  return (
+    data.reason === "ORDER_STATUS_ERROR" ||
+    /订单状态错误|order status error/i.test(
+      `${data.message ?? ""} ${data.msg ?? ""}`
+    )
+  );
+}
+
 export function parseInsufficientBalanceError(
   error: unknown
 ): InsufficientBalanceInfo | null {
